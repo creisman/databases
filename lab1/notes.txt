@@ -1,0 +1,1 @@
+TupleDesc implements Iterable<TDItem>
