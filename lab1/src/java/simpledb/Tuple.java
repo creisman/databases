@@ -29,6 +29,10 @@ public class Tuple implements Serializable {
         schema = td;
         id = null;
         fields = new ArrayList<Field>(td.numFields());
+        
+        for (int i = 0; i < td.numFields(); i++) {
+        	fields.add(null);
+        }
     }
 
     /**
