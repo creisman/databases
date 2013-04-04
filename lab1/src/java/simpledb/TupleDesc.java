@@ -254,6 +254,6 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
         @Override
         public String toString() {
             return fieldName + "(" + fieldType + ")";
-        }
-    }
+		}
+	}
 }
