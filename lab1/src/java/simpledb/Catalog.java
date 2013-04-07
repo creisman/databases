@@ -4,141 +4,233 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
 /**
- * The Catalog keeps track of all available tables in the database and their
- * associated schemas.
- * For now, this is a stub catalog that must be populated with tables by a
- * user program before it can be used -- eventually, this should be converted
- * to a catalog that reads a catalog table from disk.
+ * The Catalog keeps track of all available tables in the database and their associated schemas. For now, this is a stub
+ * catalog that must be populated with tables by a user program before it can be used -- eventually, this should be
+ * converted to a catalog that reads a catalog table from disk.
  * 
  * @Threadsafe
  */
 public class Catalog {
+    private final Map<String, Integer> names;
+    private final Map<Integer, Table> tables;
 
     /**
-     * Constructor.
-     * Creates a new, empty catalog.
+     * Constructor. Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        names = new HashMap<>();
+        tables = new HashMap<>();
     }
 
     /**
-     * Add a new table to the catalog.
-     * This table's contents are stored in the specified DbFile.
-     * @param file the contents of the table to add;  file.getId() is the identfier of
-     *    this file/tupledesc param for the calls getTupleDesc and getFile
-     * @param name the name of the table -- may be an empty string.  May not be null.  If a name
-     *    conflict exists, use the last table to be added as the table for a given name.
-     * @param pkeyField the name of the primary key field
-     */
-    public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
-    }
-
-    public void addTable(DbFile file, String name) {
-        addTable(file, name, "");
-    }
-
-    /**
-     * Add a new table to the catalog.
-     * This table has tuples formatted using the specified TupleDesc and its
-     * contents are stored in the specified DbFile.
-     * @param file the contents of the table to add;  file.getId() is the identfier of
-     *    this file/tupledesc param for the calls getTupleDesc and getFile
+     * Add a new table to the catalog. This table has tuples formatted using the specified TupleDesc and its contents
+     * are stored in the specified DbFile.
+     * 
+     * @param file
+     *            the contents of the table to add; file.getId() is the identfier of this file/tupledesc param for the
+     *            calls getTupleDesc and getFile
      */
     public void addTable(DbFile file) {
-        addTable(file, (UUID.randomUUID()).toString());
+        addTable(file, UUID.randomUUID().toString());
     }
 
     /**
-     * Return the id of the table with a specified name,
-     * @throws NoSuchElementException if the table doesn't exist
+     * Add a new table to the catalog. This table's contents are stored in the specified DbFile.
+     * 
+     * @param file
+     *            the contents of the table to add; file.getId() is the identfier of this file/tupledesc param for the
+     *            calls getTupleDesc and getFile
+     * @param name
+     *            the name of the table -- may be an empty string. May not be null. If a name conflict exists, use the
+     *            last table to be added as the table for a given name.
      */
-    public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+    public void addTable(DbFile file, String name) {
+        addTable(file, name, null);
+    }
+
+    /**
+     * Add a new table to the catalog. This table's contents are stored in the specified DbFile.
+     * 
+     * @param file
+     *            the contents of the table to add; file.getId() is the identfier of this file/tupledesc param for the
+     *            calls getTupleDesc and getFile
+     * @param name
+     *            the name of the table -- may be an empty string. May not be null. If a name conflict exists, use the
+     *            last table to be added as the table for a given name.
+     * @param pkeyField
+     *            the name of the primary key field
+     * 
+     * @throws IllegalArgumentException
+     *             if file or name is null.
+     */
+    public void addTable(DbFile file, String name, String pkeyField) {
+        if (file == null || name == null) {
+            throw new IllegalArgumentException();
+        }
+
+        names.put(name, file.getId());
+
+        Table table = new Table(file, name, pkeyField);
+        tables.put(file.getId(), table);
+    }
+
+    /**
+     * Returns the id of the table with a specified name,
+     * 
+     * @param name
+     *            The name of the table to look up.
+     * 
+     * @return the id of the table.
+     * 
+     * @throws NoSuchElementException
+     *             if the table doesn't exist
+     */
+    public int getTableId(String name) {
+        Integer id = names.get(name);
+
+        if (id == null) {
+            throw new NoSuchElementException();
+        }
+
+        return id;
+    }
+
+    /**
+     * Returns the Table with the given tableid.
+     * 
+     * @param tableid
+     *            The tableid to get the Table for.
+     * 
+     * @return the Table with the given tableid.
+     * 
+     * @throws NoSuchElementException
+     *             if the table does not exist.
+     */
+    private Table getTable(int tableid) {
+        Table table = tables.get(tableid);
+
+        if (table == null) {
+            throw new NoSuchElementException();
+        }
+
+        return table;
+    }
+
+    /**
+     * Returns the DbFile that can be used to read the contents of the specified table.
+     * 
+     * @param tableid
+     *            The id of the table, as specified by the DbFile.getId() function passed to addTable
+     * 
+     * @return the DbFile with the given tableid.
+     * 
+     * @throws NoSuchElementException
+     *             if the table doesn't exist.
+     */
+    public DbFile getDbFile(int tableid) throws NoSuchElementException {
+        return getTable(tableid).file;
     }
 
     /**
      * Returns the tuple descriptor (schema) of the specified table
-     * @param tableid The id of the table, as specified by the DbFile.getId()
-     *     function passed to addTable
-     * @throws NoSuchElementException if the table doesn't exist
+     * 
+     * @param tableid
+     *            The id of the table, as specified by the DbFile.getId() function passed to addTable
+     * 
+     * @return the schema of the table.
+     * 
+     * @throws NoSuchElementException
+     *             if the table doesn't exist
      */
-    public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+    public TupleDesc getTupleDesc(int tableid) {
+        return getDbFile(tableid).getTupleDesc();
     }
 
     /**
-     * Returns the DbFile that can be used to read the contents of the
-     * specified table.
-     * @param tableid The id of the table, as specified by the DbFile.getId()
-     *     function passed to addTable
+     * Returns the name of the field that is the primary key for the table, or null if none given.
+     * 
+     * @param tableid
+     *            The id of the table to get the primary key for.
+     * 
+     * @return the name of the primary key or null if none.
+     * 
+     * @throws NoSuchElementException
+     *             if the table doesn't exist.
      */
-    public DbFile getDbFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
-    }
-
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        return getTable(tableid).pkey;
     }
 
+    /**
+     * @return an iterator over the table ids.
+     */
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return tables.keySet().iterator();
     }
 
-    public String getTableName(int id) {
-        // some code goes here
-        return null;
+    /**
+     * Returns the name of the table represented by tableid.
+     * 
+     * @param tableid
+     *            The tableid to get the name for.
+     * 
+     * @return The name of the table.
+     * 
+     * @throws NoSuchElementException
+     *             if the tableid does not exist.
+     */
+    public String getTableName(int tableid) {
+        return getTable(tableid).name;
     }
-    
+
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        names.clear();
+        tables.clear();
     }
-    
+
     /**
      * Reads the schema from a file and creates the appropriate tables in the database.
+     * 
      * @param catalogFile
+     *            The file name of the catalog to load.
      */
     public void loadSchema(String catalogFile) {
         String line = "";
-        String baseFolder=new File(new File(catalogFile).getAbsolutePath()).getParent();
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(new File(catalogFile)));
-            
+        String baseFolder = new File(new File(catalogFile).getAbsolutePath()).getParent();
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(catalogFile)));) {
             while ((line = br.readLine()) != null) {
-                //assume line is of the format name (field type, field type, ...)
+                // assume line is of the format name (field type, field type, ...)
                 String name = line.substring(0, line.indexOf("(")).trim();
-                //System.out.println("TABLE NAME: " + name);
+                // System.out.println("TABLE NAME: " + name);
                 String fields = line.substring(line.indexOf("(") + 1, line.indexOf(")")).trim();
                 String[] els = fields.split(",");
-                ArrayList<String> names = new ArrayList<String>();
-                ArrayList<Type> types = new ArrayList<Type>();
+                ArrayList<String> names = new ArrayList<>();
+                ArrayList<Type> types = new ArrayList<>();
                 String primaryKey = "";
                 for (String e : els) {
                     String[] els2 = e.trim().split(" ");
                     names.add(els2[0].trim());
-                    if (els2[1].trim().toLowerCase().equals("int"))
+                    if (els2[1].trim().toLowerCase().equals("int")) {
                         types.add(Type.INT_TYPE);
-                    else if (els2[1].trim().toLowerCase().equals("string"))
+                    } else if (els2[1].trim().toLowerCase().equals("string")) {
                         types.add(Type.STRING_TYPE);
-                    else {
+                    } else {
                         System.out.println("Unknown type " + els2[1]);
                         System.exit(0);
                     }
                     if (els2.length == 3) {
-                        if (els2[2].trim().equals("pk"))
+                        if (els2[2].trim().equals("pk")) {
                             primaryKey = els2[0].trim();
-                        else {
+                        } else {
                             System.out.println("Unknown annotation " + els2[2]);
                             System.exit(0);
                         }
@@ -147,17 +239,28 @@ public class Catalog {
                 Type[] typeAr = types.toArray(new Type[0]);
                 String[] namesAr = names.toArray(new String[0]);
                 TupleDesc t = new TupleDesc(typeAr, namesAr);
-                HeapFile tabHf = new HeapFile(new File(baseFolder+"/"+name + ".dat"), t);
-                addTable(tabHf,name,primaryKey);
+                HeapFile tabHf = new HeapFile(new File(baseFolder + "/" + name + ".dat"), t);
+                addTable(tabHf, name, primaryKey);
                 System.out.println("Added table : " + name + " with schema " + t);
             }
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(0);
         } catch (IndexOutOfBoundsException e) {
-            System.out.println ("Invalid catalog entry : " + line);
+            System.out.println("Invalid catalog entry : " + line);
             System.exit(0);
         }
     }
-}
 
+    private class Table {
+        public final DbFile file;
+        public final String pkey;
+        public final String name;
+
+        public Table(DbFile file, String pkey, String name) {
+            this.file = file;
+            this.pkey = pkey;
+            this.name = name;
+        }
+    }
+}
