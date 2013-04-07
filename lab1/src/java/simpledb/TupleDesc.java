@@ -38,13 +38,23 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
      *            entry.
      * @param fieldAr
      *            array specifying the names of the fields. Note that names may be null.
+     * @throws IllegalArgumentException
+     *             if typeAr is null or size 0, or if fieldAr is non-null and not the same size as typeAr.
      */
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
-        fields = new ArrayList<TDItem>(typeAr.length);
+        if (typeAr == null) {
+            throw new IllegalArgumentException("typeAr cannot be null.");
+        }
+
+        if (fieldAr != null && typeAr.length != fieldAr.length) {
+            throw new IllegalArgumentException("fieldAr and typeAr are of different lengths.");
+        }
+
+        fields = new ArrayList<>(typeAr.length);
 
         for (int i = 0; i < typeAr.length; i++) {
-            // Grab the name or the empty string if unnamed.
-            String name = fieldAr != null ? fieldAr[i] : "";
+            // Grab the name or null if unnamed.
+            String name = fieldAr != null ? fieldAr[i] : null;
             fields.add(new TDItem(typeAr[i], name));
         }
     }
@@ -100,9 +110,12 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
      *             if no field with a matching name is found.
      */
     public int fieldNameToIndex(String name) {
-        for (int i = 0; i < fields.size(); i++) {
-            if (fields.get(i).fieldName.equals(name)) {
-                return i;
+        // Names that are null are "unnamed" and therefore can't be searched for.
+        if (name != null) {
+            for (int i = 0; i < fields.size(); i++) {
+                if (fields.get(i).fieldName.equals(name)) {
+                    return i;
+                }
             }
         }
 
@@ -178,6 +191,9 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
         return true;
     }
 
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         int hash = 0;
@@ -231,11 +247,22 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
          * */
         public final String fieldName;
 
+        /**
+         * Constructor for TDItem.
+         * 
+         * @param t
+         *            - The type of the TDItem.
+         * @param n
+         *            - The name of the TDItem.
+         */
         public TDItem(Type t, String n) {
             fieldName = n;
             fieldType = t;
         }
 
+        /**
+         * Returns true if o is a TDItem and has the same name and type.
+         */
         @Override
         public boolean equals(Object o) {
             if (!(o instanceof TDItem)) {
@@ -244,16 +271,25 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
 
             TDItem tmp = (TDItem) o;
 
-            return fieldName == tmp.fieldName && fieldType == tmp.fieldType;
+            // They should both be null or be equal.
+            return (fieldName == null && tmp.fieldName == null || fieldName.equals(tmp.fieldName))
+                    && fieldType == tmp.fieldType;
         }
 
-        public int hashcode() {
+        /**
+         * @see java.lang.Object#hashCode()
+         */
+        @Override
+        public int hashCode() {
             return fieldName.hashCode() + fieldType.hashCode();
         }
 
+        /**
+         * @see java.lang.Object#toString()
+         */
         @Override
         public String toString() {
             return fieldName + "(" + fieldType + ")";
-		}
-	}
+        }
+    }
 }

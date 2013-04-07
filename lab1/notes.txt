@@ -1,1 +1,12 @@
+Tuple
+If a StringField is whitespace to toString method could get screwed up.
+The .fields method should be .iterator to follow conventions.
+Tuple implements Iterable<TDItem>
+
+TupleDesc
 TupleDesc implements Iterable<TDItem>
+TupleDesc.getFieldName/getFieldType throws NoSuchElementException instead of the proper IndexOutOfBoundsException
+TupleDesc.fieldNameToIndex doesn't match naming convention of other methods. getIndexByName is better.
+TupleDesc.fieldNameToIndex should return -1 if not found, not throw an exception. They're slow and poor style.
+
+Classes don't test instanceof in .equals methods.
