@@ -113,7 +113,7 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
         // Names that are null are "unnamed" and therefore can't be searched for.
         if (name != null) {
             for (int i = 0; i < fields.size(); i++) {
-                if (fields.get(i).fieldName.equals(name)) {
+                if (name.equals(fields.get(i).fieldName)) {
                     return i;
                 }
             }
