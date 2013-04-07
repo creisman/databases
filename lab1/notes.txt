@@ -1,3 +1,9 @@
+Catalog
+addTable calls the other addTable with "". "" is a valid table name. You could accidentally name a primary key.
+addTable with no name calls addTable with a randomly generated String. This could be a duplicate. It should test that
+    it's unique first.
+iterator instead of tableIdIterator.
+
 Tuple
 If a StringField is whitespace to toString method could get screwed up.
 The .fields method should be .iterator to follow conventions.
@@ -10,3 +16,4 @@ TupleDesc.fieldNameToIndex doesn't match naming convention of other methods. get
 TupleDesc.fieldNameToIndex should return -1 if not found, not throw an exception. They're slow and poor style.
 
 Classes don't test instanceof in .equals methods.
+NoSuchElementException is an UNCHECKED exception. It does NOT belong in the method header! 
