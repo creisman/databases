@@ -73,7 +73,7 @@ public class Tuple implements Serializable {
      *             thrown if the type of f doesn't match the schema.
      */
     public void setField(int i, Field f) {
-        if (schema.getFieldType(i) != f.getType()) {
+        if (f != null && schema.getFieldType(i) != f.getType()) {
             throw new IllegalArgumentException();
         }
 
