@@ -26,8 +26,8 @@ public class Catalog {
      * Constructor. Creates a new, empty catalog.
      */
     public Catalog() {
-        names = new HashMap<>();
-        tables = new HashMap<>();
+        names = new HashMap<String, Integer>();
+        tables = new HashMap<Integer, Table>();
     }
 
     /**
@@ -206,15 +206,19 @@ public class Catalog {
     public void loadSchema(String catalogFile) {
         String line = "";
         String baseFolder = new File(new File(catalogFile).getAbsolutePath()).getParent();
-        try (BufferedReader br = new BufferedReader(new FileReader(new File(catalogFile)));) {
+
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(new File(catalogFile)));
+
             while ((line = br.readLine()) != null) {
                 // assume line is of the format name (field type, field type, ...)
                 String name = line.substring(0, line.indexOf("(")).trim();
                 // System.out.println("TABLE NAME: " + name);
                 String fields = line.substring(line.indexOf("(") + 1, line.indexOf(")")).trim();
                 String[] els = fields.split(",");
-                ArrayList<String> names = new ArrayList<>();
-                ArrayList<Type> types = new ArrayList<>();
+                ArrayList<String> names = new ArrayList<String>();
+                ArrayList<Type> types = new ArrayList<Type>();
                 String primaryKey = "";
                 for (String e : els) {
                     String[] els2 = e.trim().split(" ");
@@ -225,6 +229,8 @@ public class Catalog {
                         types.add(Type.STRING_TYPE);
                     } else {
                         System.out.println("Unknown type " + els2[1]);
+                        br.close();
+                        br = null;
                         System.exit(0);
                     }
                     if (els2.length == 3) {
@@ -232,6 +238,8 @@ public class Catalog {
                             primaryKey = els2[0].trim();
                         } else {
                             System.out.println("Unknown annotation " + els2[2]);
+                            br.close();
+                            br = null;
                             System.exit(0);
                         }
                     }
@@ -249,6 +257,14 @@ public class Catalog {
         } catch (IndexOutOfBoundsException e) {
             System.out.println("Invalid catalog entry : " + line);
             System.exit(0);
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
     }
 

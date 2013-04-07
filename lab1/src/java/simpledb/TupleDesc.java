@@ -50,7 +50,7 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
             throw new IllegalArgumentException("fieldAr and typeAr are of different lengths.");
         }
 
-        fields = new ArrayList<>(typeAr.length);
+        fields = new ArrayList<TDItem>(typeAr.length);
 
         for (int i = 0; i < typeAr.length; i++) {
             // Grab the name or null if unnamed.
