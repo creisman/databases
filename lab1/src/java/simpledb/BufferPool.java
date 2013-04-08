@@ -24,7 +24,7 @@ public class BufferPool {
     public static final int DEFAULT_PAGES = 50;
 
     private final int maxPages;
-    private final Map<Integer, Page> pages;
+    private final Map<PageId, Page> pages;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -34,7 +34,7 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         maxPages = numPages;
-        pages = new HashMap<Integer, Page>(maxPages, 1f); // We know the exact size to make this...
+        pages = new HashMap<PageId, Page>(maxPages, 1f); // We know the exact size to make this...
     }
 
     /**
@@ -59,8 +59,8 @@ public class BufferPool {
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm) throws TransactionAbortedException,
             DbException {
-        if (pages.containsKey(pid.getTableId())) {
-            return pages.get(pid.getTableId());
+        if (pages.containsKey(pid)) {
+            return pages.get(pid);
         }
         if (pages.size() >= maxPages) {
             evictPage();
@@ -69,7 +69,11 @@ public class BufferPool {
         Catalog cat = Database.getCatalog();
 
         DbFile file = cat.getDbFile(pid.getTableId());
-        return file.readPage(pid);
+        Page page = file.readPage(pid);
+        
+        pages.put(pid, page);
+        
+        return page;
     }
 
     /**
