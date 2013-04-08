@@ -188,7 +188,8 @@ public class HeapFile implements DbFile {
         public void open() throws DbException, TransactionAbortedException {
             // Do nothing if already open.
             if (itr == null) {
-                rewind();
+            	nextPage = 0;
+                findNext();
             }
         }
 
@@ -241,8 +242,8 @@ public class HeapFile implements DbFile {
          */
         @Override
         public void rewind() throws DbException, TransactionAbortedException {
-            nextPage = 0;
-            findNext();
+        	close();
+            open();
         }
 
         /**
