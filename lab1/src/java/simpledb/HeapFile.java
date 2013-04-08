@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
@@ -26,7 +28,12 @@ public class HeapFile implements DbFile {
     private final TupleDesc schema;
     private final int id;
 
+    private static Map<String, Integer> assignedIds;
     private static int nextId = 0;
+
+    static {
+        assignedIds = new HashMap<String, Integer>();
+    }
 
     /**
      * Constructs a heap file backed by the specified file.
@@ -39,7 +46,17 @@ public class HeapFile implements DbFile {
     public HeapFile(File f, TupleDesc td) {
         file = f;
         schema = td;
-        id = nextId++;
+
+        Integer cachedId = assignedIds.get(file.getAbsolutePath());
+
+        // Found
+        if (cachedId != null) {
+            id = cachedId;
+        } else { // Not found
+            id = nextId++;
+            assignedIds.put(file.getAbsolutePath(), id);
+        }
+
     }
 
     /**
