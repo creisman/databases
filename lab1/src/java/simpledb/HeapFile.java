@@ -185,7 +185,10 @@ public class HeapFile implements DbFile {
          */
         @Override
         public void open() throws DbException, TransactionAbortedException {
-            rewind();
+            // Do nothing if already open.
+            if (itr == null) {
+                rewind();
+            }
         }
 
         /**
@@ -246,7 +249,6 @@ public class HeapFile implements DbFile {
          */
         @Override
         public void close() {
-            // I'm not sure what's supposed to happen here...
             itr = null;
         }
     }
