@@ -102,7 +102,8 @@ public class HeapFile implements DbFile {
         InputStream input = null;
         try {
             input = new DataInputStream(new FileInputStream(file));
-            input.read(data, BufferPool.PAGE_SIZE * pid.pageNumber(), data.length);
+            input.skip(BufferPool.PAGE_SIZE * pid.pageNumber());
+            input.read(data);
             page = new HeapPage((HeapPageId) pid, data);
         } catch (IOException ex) {
             throw new IllegalArgumentException();
