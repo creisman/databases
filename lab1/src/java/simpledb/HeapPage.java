@@ -72,11 +72,11 @@ public class HeapPage implements Page, Iterable<Tuple> {
         for (int i = 0; i < header.length; i++) {
             header[i] = dis.readByte();
 
-            int mask = 0x1;
             for (int j = 0; j < 8; j++) {
-                int val = header[i] >>> j & mask;
-                if (val == 0x0) {
-                    emptySlots.add(i * 8 + j);
+                // If a slot is empty, add it to the empty list.
+                int val = i * 8 + j;
+                if (!isSlotUsed(val)) {
+                    emptySlots.add(val);
                 }
             }
         }
@@ -89,7 +89,7 @@ public class HeapPage implements Page, Iterable<Tuple> {
                 tuples[i] = tup;
 
                 if (tup != null) {
-                    indexLookup.put(tuples[i], i);
+                    indexLookup.put(tup, i);
                 }
             }
         } catch (NoSuchElementException e) {
@@ -292,7 +292,7 @@ public class HeapPage implements Page, Iterable<Tuple> {
      *             if this tuple is not on this page, or tuple slot is already empty.
      */
     public void deleteTuple(Tuple t) throws DbException {
-        Integer i = indexLookup.get(t);
+        Integer i = indexLookup.remove(t);
 
         if (i == null) {
             throw new DbException("The tuple does not exist.");
@@ -301,6 +301,8 @@ public class HeapPage implements Page, Iterable<Tuple> {
         }
 
         markSlotUsed(i, false);
+        t.setRecordId(null);
+        tuples[i] = null;
     }
 
     /**
@@ -323,9 +325,11 @@ public class HeapPage implements Page, Iterable<Tuple> {
             throw new DbException("There is no empty slot.");
         }
 
-        Integer i = emptySlots.remove(emptySlots.size() - 1);
-        tuples[i] = t;
-        markSlotUsed(i, true);
+        int slotId = emptySlots.remove(emptySlots.size() - 1); // Get next slot.
+        RecordId rid = new RecordId(pid, slotId); // Update tuples rid.
+        t.setRecordId(rid);
+        tuples[slotId] = t;
+        markSlotUsed(slotId, true);
     }
 
     /**
@@ -405,6 +409,14 @@ public class HeapPage implements Page, Iterable<Tuple> {
         return new HeapPageIterator();
     }
 
+    /**
+     * This iterator is greedy. It will find the next value immediately after returning the previous. This is possibly
+     * less efficient if they don't do a full traversal, but it follows standard design patterns in that it hasNext() is
+     * not a mutator.
+     * 
+     * @author Conor
+     * 
+     */
     private class HeapPageIterator implements Iterator<Tuple> {
         private int next;
 
