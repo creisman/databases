@@ -175,20 +175,9 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
         if (!(o instanceof TupleDesc)) {
             return false;
         }
-
         TupleDesc tmp = (TupleDesc) o;
 
-        if (numFields() != tmp.numFields()) {
-            return false;
-        }
-
-        for (int i = 0; i < numFields(); i++) {
-            if (!fields.get(i).equals(tmp.fields.get(i))) {
-                return false;
-            }
-        }
-
-        return true;
+        return fields.equals(tmp.fields);
     }
 
     /**
@@ -239,13 +228,13 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
 
         /**
          * The type of the field
-         * */
-        public final Type fieldType;
+         */
+        private final Type fieldType;
 
         /**
          * The name of the field
-         * */
-        public final String fieldName;
+         */
+        private final String fieldName;
 
         /**
          * Constructor for TDItem.
