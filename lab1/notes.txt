@@ -5,7 +5,7 @@ addTable with no name calls addTable with a randomly generated String. This coul
 iterator instead of tableIdIterator.
 
 DbFile
-.writePage javadoc says PageId has a method pageno, when it's pagenumber.
+.writePage javadoc says PageId has a method pageno, when it's pageNumber.
 
 DbFileIterator/DbIterator
 Next should throw IllegalStateException when not open.
@@ -17,21 +17,33 @@ readPage should have throws IOException. FileNotFoundException is NOT the only I
 HeapPage
 FIELDS SHOULD BE PRIVATE.
 The iterator doesn't specify that it needs to be in the order as on disk, but the tests enforce that.
+Why assume that a parse exception means that there isn't another Tuple?
+Why does this take only a HeapPageId? It is LITERALLY no different from a PageId and there's no reason not to!
+
+Page
+This should be Iterable. Or at least have the .iterator method so we don't have to cast.
+
+PageId
+.pageNumber doesn't fit the standard naming convention. It should be getPageNumber.
+Why is this an interface? This should be a class. There is no other information necessary and if needed, it could be
+    added with a subclass. HeapPageId should just be PageId.
 
 RecordId
 .tupleno doesn't fit standard naming conventions. Should be getTupleNo.
 
 Tuple
-If a StringField is whitespace to toString method could get screwed up.
+If a StringField is whitespace toString method could get screwed up.
 The .fields method should be .iterator to follow conventions.
-Tuple implements Iterable<TDItem>
+Tuple implements Iterable<Field>
 
 TupleDesc
 TupleDesc implements Iterable<TDItem>
 TupleDesc.getFieldName/getFieldType throws NoSuchElementException instead of the proper IndexOutOfBoundsException
 TupleDesc.fieldNameToIndex doesn't match naming convention of other methods. getIndexByName is better.
 TupleDesc.fieldNameToIndex should return -1 if not found, not throw an exception. They're slow and poor style.
+TDItem fields should be private on public inner classes.
 
+General
 Classes don't test instanceof in .equals methods.
 NoSuchElementException is an UNCHECKED exception. It does NOT belong in the method header!
-The project doesn't use proper namespacing conventions.
+The project doesn't use proper package namespacing conventions.
