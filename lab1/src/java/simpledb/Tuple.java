@@ -109,7 +109,7 @@ public class Tuple implements Serializable, Iterable<Field> {
             str.append("\t").append(fields.get(i));
         }
 
-        return str.toString();
+        return str.append("\n").toString();
     }
 
     /**
