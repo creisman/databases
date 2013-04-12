@@ -1,13 +1,11 @@
 package simpledb;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -99,12 +97,12 @@ public class HeapFile implements DbFile {
         byte[] data = new byte[BufferPool.PAGE_SIZE];
 
         HeapPage page;
-        InputStream input = null;
+        RandomAccessFile input = null;
         try {
-            input = new DataInputStream(new FileInputStream(file));
-            input.skip(BufferPool.PAGE_SIZE * pid.pageNumber());
+            input = new RandomAccessFile(file, "r");
+            input.seek(BufferPool.PAGE_SIZE * pid.pageNumber());
             input.read(data);
-            page = new HeapPage((HeapPageId) pid, data);
+            page = new HeapPage(new HeapPageId(pid.getTableId(), pid.pageNumber()), data);
         } catch (IOException ex) {
             throw new IllegalArgumentException();
         } finally {
@@ -171,6 +169,14 @@ public class HeapFile implements DbFile {
         return new HeapFileIterator(tid);
     }
 
+    /**
+     * This iterator is greedy. It will find the next value immediately after returning the previous. This is possibly
+     * less efficient if they don't do a full traversal, but it follows standard design patterns in that it hasNext() is
+     * not a mutator.
+     * 
+     * @author Conor
+     * 
+     */
     private class HeapFileIterator implements DbFileIterator {
 
         private int nextPage;
@@ -202,10 +208,7 @@ public class HeapFile implements DbFile {
                 return false;
             }
 
-            if (itr.hasNext()) {
-                return true;
-            }
-
+            // Does nothing if already at a valid Tuple.
             findNext();
 
             return itr.hasNext();
@@ -219,7 +222,7 @@ public class HeapFile implements DbFile {
         }
 
         private void getNextPage() throws DbException, TransactionAbortedException {
-            itr = ((HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(id, nextPage), null)).iterator();
+            itr = Database.getBufferPool().getPage(tid, new HeapPageId(id, nextPage), Permissions.READ_ONLY).iterator();
         }
 
         /**
