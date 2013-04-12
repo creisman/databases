@@ -75,6 +75,7 @@ public class SeqScan implements DbIterator {
     public void reset(int tableid, String tableAlias) {
         this.tableid = tableid;
         this.tableAlias = tableAlias;
+        close();
     }
 
     /**
