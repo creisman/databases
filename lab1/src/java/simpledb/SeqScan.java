@@ -78,17 +78,6 @@ public class SeqScan implements DbIterator {
     }
 
     /**
-     * @see simpledb.DbIterator#open()
-     */
-    @Override
-    public void open() throws DbException, TransactionAbortedException {
-        if (itr == null) {
-            itr = Database.getCatalog().getDbFile(tableid).iterator(tid);
-            itr.open();
-        }
-    }
-
-    /**
      * Returns the TupleDesc with field names from the underlying HeapFile, prefixed with the tableAlias string from the
      * constructor. This prefix becomes useful when joining tables containing a field(s) with the same name.
      * 
@@ -107,6 +96,17 @@ public class SeqScan implements DbIterator {
         }
 
         return new TupleDesc(types, names);
+    }
+
+    /**
+     * @see simpledb.DbIterator#open()
+     */
+    @Override
+    public void open() throws DbException, TransactionAbortedException {
+        if (itr == null) {
+            itr = Database.getCatalog().getDbFile(tableid).iterator(tid);
+            itr.open();
+        }
     }
 
     /**
@@ -148,10 +148,8 @@ public class SeqScan implements DbIterator {
      */
     @Override
     public void rewind() throws DbException, TransactionAbortedException {
-        if (itr == null) {
-            throw new NoSuchElementException();
+        if (itr != null) {
+            itr.rewind();
         }
-
-        itr.rewind();
     }
 }
