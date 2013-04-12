@@ -9,7 +9,7 @@ import java.util.List;
  * Tuple maintains information about the contents of a tuple. Tuples have a specified schema specified by a TupleDesc
  * object and contain Field objects with the data for each field.
  */
-public class Tuple implements Serializable {
+public class Tuple implements Serializable, Iterable<Field> {
 
     private static final long serialVersionUID = 1L;
 
@@ -106,16 +106,26 @@ public class Tuple implements Serializable {
 
         str.append(fields.get(0));
         for (int i = 1; i < fields.size(); i++) {
-            str.append("\t" + fields.get(i));
+            str.append("\t").append(fields.get(i));
         }
 
         return str.toString();
     }
 
     /**
-     * @return An iterator which iterates over all the fields of this tuple
+     * @return An iterator which iterates over all the fields of this tuple.
+     * 
+     *         Same as iterator()
      * */
     public Iterator<Field> fields() {
+        return iterator();
+    }
+
+    /**
+     * @return An iterator which iterates over all the fields of this tuple
+     * */
+    @Override
+    public Iterator<Field> iterator() {
         return fields.iterator();
     }
 
