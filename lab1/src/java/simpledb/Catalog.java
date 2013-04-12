@@ -94,6 +94,10 @@ public class Catalog {
      *             if the table doesn't exist
      */
     public int getTableId(String name) {
+        if (name == null) {
+            throw new NoSuchElementException();
+        }
+
         Integer id = names.get(name);
 
         if (id == null) {

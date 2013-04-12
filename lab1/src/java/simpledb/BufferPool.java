@@ -56,9 +56,15 @@ public class BufferPool {
      *             if the transaction is aborted.
      * @throws DbException
      *             if the database throws an exception.
+     * @throws IllegalArgumentException
+     *             if any of the arguments are null.
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm) throws TransactionAbortedException,
             DbException {
+        if (tid == null || pid == null || perm == null) {
+            throw new IllegalArgumentException();
+        }
+
         if (pages.containsKey(pid)) {
             return pages.get(pid);
         }
