@@ -22,15 +22,15 @@ import java.util.NoSuchElementException;
  */
 public class HeapPage implements Page {
 
-    private final HeapPageId pid;
-    private final TupleDesc td;
-    private final byte header[];
-    private final Tuple tuples[];
-    private final int numSlots;
+    final HeapPageId pid;
+    final TupleDesc td;
+    final byte header[];
+    final Tuple tuples[];
+    final int numSlots;
     private final Map<Tuple, Integer> indexLookup;
     private final List<Integer> emptySlots;
 
-    private byte[] oldData;
+    byte[] oldData;
     private final Byte oldDataLock = new Byte((byte) 0);
 
     /**

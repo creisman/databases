@@ -229,12 +229,12 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
         /**
          * The type of the field
          */
-        private final Type fieldType;
+        public final Type fieldType;
 
         /**
          * The name of the field
          */
-        private final String fieldName;
+        public final String fieldName;
 
         /**
          * Constructor for TDItem.
