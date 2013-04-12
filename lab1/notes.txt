@@ -1,3 +1,7 @@
+test.java
+The provided code for test.java should define a class Test for standard naming conventions.
+The provided code should use print, not println, since Tuple.toString appends \n.
+
 Catalog
 addTable calls the other addTable with "". "" is a valid field name. You could accidentally name a primary key.
 addTable with no name calls addTable with a randomly generated String. This could be a duplicate. It should test that
