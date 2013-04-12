@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 /**
  * Each instance of HeapPage stores data for one page of HeapFiles and implements the Page interface that is used by
  * BufferPool.
@@ -22,7 +20,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  * @see BufferPool
  * 
  */
-public class HeapPage implements Page, Iterable<Tuple> {
+public class HeapPage implements Page {
 
     private final HeapPageId pid;
     private final TupleDesc td;
@@ -457,7 +455,7 @@ public class HeapPage implements Page, Iterable<Tuple> {
          */
         @Override
         public void remove() {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
     }
 }
