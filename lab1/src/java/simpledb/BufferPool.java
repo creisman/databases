@@ -1,8 +1,8 @@
 package simpledb;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from disk. Access methods call into it to retrieve
@@ -34,7 +34,7 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         maxPages = numPages;
-        pages = new HashMap<PageId, Page>(maxPages, 1f); // We know the exact size to make this...
+        pages = new ConcurrentHashMap<PageId, Page>(maxPages, 1f); // We know the exact size to make this...
     }
 
     /**
@@ -70,9 +70,9 @@ public class BufferPool {
 
         DbFile file = cat.getDbFile(pid.getTableId());
         Page page = file.readPage(pid);
-        
+
         pages.put(pid, page);
-        
+
         return page;
     }
 

@@ -5,11 +5,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The Catalog keeps track of all available tables in the database and their associated schemas. For now, this is a stub
@@ -26,8 +26,8 @@ public class Catalog {
      * Constructor. Creates a new, empty catalog.
      */
     public Catalog() {
-        names = new HashMap<String, Integer>();
-        tables = new HashMap<Integer, Table>();
+        names = new ConcurrentHashMap<String, Integer>();
+        tables = new ConcurrentHashMap<Integer, Table>();
     }
 
     /**
@@ -140,21 +140,6 @@ public class Catalog {
     }
 
     /**
-     * Returns the tuple descriptor (schema) of the specified table
-     * 
-     * @param tableid
-     *            The id of the table, as specified by the DbFile.getId() function passed to addTable
-     * 
-     * @return the schema of the table.
-     * 
-     * @throws NoSuchElementException
-     *             if the table doesn't exist
-     */
-    public TupleDesc getTupleDesc(int tableid) {
-        return getDbFile(tableid).getTupleDesc();
-    }
-
-    /**
      * Returns the name of the field that is the primary key for the table, or null if none given.
      * 
      * @param tableid
@@ -170,13 +155,6 @@ public class Catalog {
     }
 
     /**
-     * @return an iterator over the table ids.
-     */
-    public Iterator<Integer> tableIdIterator() {
-        return tables.keySet().iterator();
-    }
-
-    /**
      * Returns the name of the table represented by tableid.
      * 
      * @param tableid
@@ -189,6 +167,28 @@ public class Catalog {
      */
     public String getTableName(int tableid) {
         return getTable(tableid).name;
+    }
+
+    /**
+     * Returns the tuple descriptor (schema) of the specified table
+     * 
+     * @param tableid
+     *            The id of the table, as specified by the DbFile.getId() function passed to addTable
+     * 
+     * @return the schema of the table.
+     * 
+     * @throws NoSuchElementException
+     *             if the table doesn't exist
+     */
+    public TupleDesc getTupleDesc(int tableid) {
+        return getDbFile(tableid).getTupleDesc();
+    }
+
+    /**
+     * @return an iterator over the table ids.
+     */
+    public Iterator<Integer> tableIdIterator() {
+        return tables.keySet().iterator();
     }
 
     /** Delete all tables from the catalog */
