@@ -250,7 +250,7 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
         }
 
         /**
-         * Returns true if o is a TDItem and has the same name and type.
+         * Returns true if o is a TDItem and has the same type.
          */
         @Override
         public boolean equals(Object o) {
@@ -261,8 +261,7 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
             TDItem tmp = (TDItem) o;
 
             // They should both be null or be equal.
-            return (fieldName == null && tmp.fieldName == null || fieldName.equals(tmp.fieldName))
-                    && fieldType == tmp.fieldType;
+            return fieldType == tmp.fieldType;
         }
 
         /**
