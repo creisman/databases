@@ -152,4 +152,32 @@ public class Tuple implements Serializable, Iterable<Field> {
 
         schema = td;
     }
+
+    /**
+     * Merge two Tuples into one, with t1.getTupleDesc().numFields() + t2.getTupleDesc().numFields() fields, with the
+     * fields coming first from t1, then t2.
+     * 
+     * @param t1
+     *            The Tuple with the first fields of the new Tuple
+     * @param t2
+     *            The Tuple with the last fields of the Tuple
+     * 
+     * @return the new Tuple
+     */
+    public static Tuple merge(Tuple t1, Tuple t2) {
+        Tuple ret = new Tuple(TupleDesc.merge(t1.getTupleDesc(), t2.getTupleDesc()));
+
+        int i = 0;
+        for (Field f : t1) {
+            ret.setField(i, f);
+            i++;
+        }
+
+        for (Field f : t2) {
+            ret.setField(i, f);
+            i++;
+        }
+
+        return ret;
+    }
 }

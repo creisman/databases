@@ -3,12 +3,16 @@ package simpledb;
 import java.io.Serializable;
 
 /**
- * JoinPredicate compares fields of two tuples using a predicate. JoinPredicate
- * is most likely used by the Join operator.
+ * JoinPredicate compares fields of two tuples using a predicate. JoinPredicate is most likely used by the Join
+ * operator.
  */
 public class JoinPredicate implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    private final int field1;
+    private final int field2;
+    private final Predicate.Op op;
 
     /**
      * Constructor -- create a new predicate over two fields of two tuples.
@@ -18,42 +22,49 @@ public class JoinPredicate implements Serializable {
      * @param field2
      *            The field index into the second tuple in the predicate
      * @param op
-     *            The operation to apply (as defined in Predicate.Op); either
-     *            Predicate.Op.GREATER_THAN, Predicate.Op.LESS_THAN,
-     *            Predicate.Op.EQUAL, Predicate.Op.GREATER_THAN_OR_EQ, or
+     *            The operation to apply (as defined in Predicate.Op); either Predicate.Op.GREATER_THAN,
+     *            Predicate.Op.LESS_THAN, Predicate.Op.EQUAL, Predicate.Op.GREATER_THAN_OR_EQ, or
      *            Predicate.Op.LESS_THAN_OR_EQ
      * @see Predicate
      */
     public JoinPredicate(int field1, Predicate.Op op, int field2) {
-        // some code goes here
+        this.field1 = field1;
+        this.field2 = field2;
+        this.op = op;
     }
 
     /**
-     * Apply the predicate to the two specified tuples. The comparison can be
-     * made through Field's compare method.
+     * Apply the predicate to the two specified tuples. The comparison can be made through Field's compare method.
+     * 
+     * @param t1
+     *            The tuple to get field1 from.
+     * @param t2
+     *            The tuple to get field2 from.
      * 
      * @return true if the tuples satisfy the predicate.
      */
     public boolean filter(Tuple t1, Tuple t2) {
-        // some code goes here
-        return false;
+        return t1.getField(field1).compare(op, t2.getField(field2));
     }
-    
-    public int getField1()
-    {
-        // some code goes here
-        return -1;
+
+    /**
+     * @return The field to grab from tuple 1.
+     */
+    public int getField1() {
+        return field1;
     }
-    
-    public int getField2()
-    {
-        // some code goes here
-        return -1;
+
+    /**
+     * @return The field to grab from tuple 2.
+     */
+    public int getField2() {
+        return field2;
     }
-    
-    public Predicate.Op getOperator()
-    {
-        // some code goes here
-        return null;
+
+    /**
+     * @return The operator to use to compare.
+     */
+    public Predicate.Op getOperator() {
+        return op;
     }
 }
