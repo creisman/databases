@@ -1,0 +1,3 @@
+SELECT p.title
+FROM papers p
+WHERE p.title LIKE 'selectivity';
