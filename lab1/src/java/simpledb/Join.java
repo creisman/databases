@@ -150,6 +150,7 @@ public class Join extends Operator {
      */
     @Override
     public void setChildren(DbIterator[] children) {
+        close();
         child1 = children[0];
         child2 = children[1];
     }

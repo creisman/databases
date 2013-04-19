@@ -99,6 +99,7 @@ public class Filter extends Operator {
      */
     @Override
     public void setChildren(DbIterator[] children) {
+        close();
         child = children[0];
     }
 }
