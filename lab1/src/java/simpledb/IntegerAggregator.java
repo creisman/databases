@@ -2,6 +2,8 @@ package simpledb;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -64,7 +66,7 @@ public class IntegerAggregator extends AbstractAggregator {
         // Update the count.
         super.mergeTupleIntoGroup(tup);
 
-        Field gb = getGbField() == NO_GROUPING ? null : tup.getField(getGbField());
+        Field gb = !isGrouped() ? null : tup.getField(getGbField());
         int val = ((IntField) tup.getField(getAField())).getValue();
         if (agg.containsKey(gb)) {
             switch (getOp()) {
@@ -101,6 +103,15 @@ public class IntegerAggregator extends AbstractAggregator {
     public DbIterator iterator() {
         if (getOp() == Op.COUNT) {
             return super.iterator();
+        } else if (agg.size() == 0 && !isGrouped()) {
+            // TODO write test for this.
+            // Empty and not grouped should return null.
+            Tuple tup = new Tuple(getTd());
+            tup.setField(0, null);
+
+            List<Tuple> list = new LinkedList<Tuple>();
+            list.add(tup);
+            return new TupleIterator(getTd(), list);
         }
 
         return new IntegerAggregatorIterator();

@@ -42,7 +42,7 @@ public abstract class AbstractAggregator implements Aggregator {
      * @param gbFieldName
      *            the name of the group by field name or null if no grouping
      * @param aggFieldName
-     *            the name of the aggregate field name
+     *            the name of the aggregate field name (with operation)
      */
     public AbstractAggregator(int gbfield, Type gbfieldtype, int afield, Op what, String gbFieldName,
             String aggFieldName) {
@@ -53,7 +53,7 @@ public abstract class AbstractAggregator implements Aggregator {
         counts = new HashMap<Field, Integer>();
 
         // This is to handle the case that nothing is added.
-        if (op == Op.COUNT && gbfield == NO_GROUPING) {
+        if (op == Op.COUNT && !isGrouped()) {
             counts.put(null, 0);
         }
 
@@ -61,13 +61,13 @@ public abstract class AbstractAggregator implements Aggregator {
         List<Type> types = new ArrayList<Type>(3);
         List<String> names = new ArrayList<String>(3);
 
-        if (gbfield != NO_GROUPING) {
+        if (isGrouped()) {
             types.add(gbfieldtype);
             names.add(gbFieldName);
         }
 
         types.add(Type.INT_TYPE);
-        names.add(op + "(" + aggFieldName + ")");
+        names.add(aggFieldName);
 
         td = new TupleDesc(types.toArray(new Type[types.size()]), names.toArray(new String[names.size()]));
     }
@@ -78,7 +78,7 @@ public abstract class AbstractAggregator implements Aggregator {
     @Override
     public void mergeTupleIntoGroup(Tuple tup) {
         // If there's no grouping put it in null, else increment its field.
-        Field gf = gbField == NO_GROUPING ? null : tup.getField(gbField);
+        Field gf = !isGrouped() ? null : tup.getField(gbField);
         if (counts.containsKey(gf)) {
             counts.put(gf, counts.get(gf) + 1);
         } else {
@@ -99,6 +99,13 @@ public abstract class AbstractAggregator implements Aggregator {
      */
     protected int getGbField() {
         return gbField;
+    }
+
+    /**
+     * @return true if the aggregate is grouped.
+     */
+    protected boolean isGrouped() {
+        return gbField != NO_GROUPING;
     }
 
     /**
@@ -170,7 +177,7 @@ public abstract class AbstractAggregator implements Aggregator {
             Tuple tup = new Tuple(getTd());
             Field val = new IntField(entry.getValue());
 
-            if (getGbField() == NO_GROUPING) {
+            if (!isGrouped()) {
                 tup.setField(0, val);
             } else {
                 tup.setField(0, entry.getKey());
