@@ -57,8 +57,7 @@ public class Aggregate extends Operator {
      *         tuples If not, return null;
      * */
     public String groupFieldName() {
-        // some code goes here
-        return null;
+        return gField == Aggregator.NO_GROUPING ? null : child.getTupleDesc().getFieldName(gField);
     }
 
     /**
@@ -72,8 +71,7 @@ public class Aggregate extends Operator {
      * @return return the name of the aggregate field in the <b>OUTPUT</b> tuples
      * */
     public String aggregateFieldName() {
-        // some code goes here
-        return null;
+        return op + "(" + child.getTupleDesc().getFieldName(aField) + ")";
     }
 
     /**
@@ -156,7 +154,10 @@ public class Aggregate extends Operator {
     @Override
     public void close() {
         super.close();
-        itr.close();
+
+        if (itr != null) {
+            itr.close();
+        }
     }
 
     /**
@@ -174,6 +175,7 @@ public class Aggregate extends Operator {
     public void setChildren(DbIterator[] children) {
         close();
         child = children[0];
+        itr = null;
         reset();
     }
 
@@ -183,12 +185,10 @@ public class Aggregate extends Operator {
     private void reset() {
         TupleDesc childTd = child.getTupleDesc();
         Type gFieldType = gField == Aggregator.NO_GROUPING ? null : childTd.getFieldType(gField);
-        String gbFieldName = gField == Aggregator.NO_GROUPING ? null : childTd.getFieldName(gField);
-        String aggFieldName = childTd.getFieldName(aField);
         if (childTd.getFieldType(aField) == Type.INT_TYPE) {
-            agg = new IntegerAggregator(gField, gFieldType, aField, op, gbFieldName, aggFieldName);
+            agg = new IntegerAggregator(gField, gFieldType, aField, op, groupFieldName(), aggregateFieldName());
         } else {
-            agg = new StringAggregator(gField, gFieldType, aField, op, gbFieldName, aggFieldName);
+            agg = new StringAggregator(gField, gFieldType, aField, op, groupFieldName(), aggregateFieldName());
         }
     }
 }
