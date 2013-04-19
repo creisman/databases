@@ -1,9 +1,7 @@
 package simpledb;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -17,7 +15,7 @@ public class IntegerAggregator extends AbstractAggregator {
     private final Map<Field, Integer> agg;
 
     /**
-     * Aggregate constructor
+     * NOTE: Don't use this. Use the other constructor. This is only provided to pass the tests.
      * 
      * @param gbfield
      *            the 0-based index of the group-by field in the tuple, or NO_GROUPING if there is no grouping
@@ -29,9 +27,30 @@ public class IntegerAggregator extends AbstractAggregator {
      *            the aggregation operator
      */
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        super(gbfield, gbfieldtype, afield, what);
+        this(gbfield, gbfieldtype, afield, what, GROUP_BY_NAME, AGGREGATE_NAME);
+    }
+
+    /**
+     * Aggregate constructor
+     * 
+     * @param gbfield
+     *            the 0-based index of the group-by field in the tuple, or NO_GROUPING if there is no grouping
+     * @param gbfieldtype
+     *            the type of the group by field (e.g., Type.INT_TYPE), or null if there is no grouping
+     * @param afield
+     *            the 0-based index of the aggregate field in the tuple
+     * @param what
+     *            the aggregation operator
+     * @param gbFieldName
+     *            the name of the group by field name or null if no grouping
+     * @param aggFieldName
+     *            the name of the aggregate field name
+     */
+    public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what, String gbFieldName, String aggFieldName) {
+        super(gbfield, gbfieldtype, afield, what, gbFieldName, aggFieldName);
 
         agg = new HashMap<Field, Integer>();
+
     }
 
     /**
@@ -80,41 +99,25 @@ public class IntegerAggregator extends AbstractAggregator {
      */
     @Override
     public DbIterator iterator() {
-        List<Type> types = new ArrayList<Type>(3);
-        List<String> names = new ArrayList<String>(3);
-
-        if (getGbField() != NO_GROUPING) {
-            types.add(getGbFieldType());
-            names.add("groupVal");
+        if (getOp() == Op.COUNT) {
+            return super.iterator();
         }
 
-        types.add(Type.INT_TYPE);
-        names.add("aggregateVal");
-
-        TupleDesc td = new TupleDesc(types.toArray(new Type[types.size()]), names.toArray(new String[names.size()]));
-
-        return new IntegerAggregatorIterator(td);
+        return new IntegerAggregatorIterator();
     }
 
     private class IntegerAggregatorIterator implements DbIterator {
 
         private static final long serialVersionUID = 1L;
 
-        private final TupleDesc td;
         private Iterator<Entry<Field, Integer>> itr;
-        // This is needed for the case where it's called on an empty table an must return a result.
-        private boolean firstCall;
-
-        public IntegerAggregatorIterator(TupleDesc td) {
-            this.td = td;
-        }
 
         /**
          * @see simpledb.DbFileIterator#open()
          */
         @Override
         public void open() throws DbException, TransactionAbortedException {
-            itr = agg.size() != 0 ? agg.entrySet().iterator() : getCounts().entrySet().iterator();
+            itr = agg.entrySet().iterator();
         }
 
         /**
@@ -130,40 +133,23 @@ public class IntegerAggregator extends AbstractAggregator {
          */
         @Override
         public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
-            // TODO oh god this is messy. How to handle empty tables with no grouping.
-            // Possible splits:
-            // 1) Grouping vs Non-grouping iterator.
-            // 2) Empty non-grouping vs other.
             Entry<Field, Integer> entry = itr.next();
 
-            Tuple tup = new Tuple(td);
+            Tuple tup = new Tuple(getTd());
+
+            int val = entry.getValue();
+
+            if (getOp() == Op.AVG) {
+                val /= getCounts().get(entry.getKey());
+            }
+
+            Field valField = new IntField(val);
 
             if (getGbField() == NO_GROUPING) {
-                int val = 0;
-
-                if (getOp() == Op.COUNT) {
-                    val = getCounts().get(null);
-                } else {
-                    val = entry.getValue();
-                }
-
-                // If there's no grouping, the only entry will be the one I want.
-                tup.setField(0, new IntField(val));
+                tup.setField(0, valField);
             } else {
                 tup.setField(0, entry.getKey());
-
-                int val = 0;
-
-                if (getOp() == Op.COUNT) {
-                    val = getCounts().get(entry.getKey());
-                } else {
-                    val = entry.getValue();
-
-                    if (getOp() == Op.AVG) {
-                        val /= getCounts().get(entry.getKey());
-                    }
-                }
-                tup.setField(1, new IntField(val));
+                tup.setField(1, valField);
             }
 
             return tup;
@@ -191,7 +177,7 @@ public class IntegerAggregator extends AbstractAggregator {
          */
         @Override
         public TupleDesc getTupleDesc() {
-            return td;
+            return getTd();
         }
     }
 }
