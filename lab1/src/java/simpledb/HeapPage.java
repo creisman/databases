@@ -29,6 +29,7 @@ public class HeapPage implements Page {
     final int numSlots;
     private final Map<Tuple, Integer> indexLookup;
     private final List<Integer> emptySlots;
+    private TransactionId dirty;
 
     byte[] oldData;
     private final Byte oldDataLock = new Byte((byte) 0);
@@ -335,8 +336,11 @@ public class HeapPage implements Page {
      */
     @Override
     public void markDirty(boolean dirty, TransactionId tid) {
-        // some code goes here
-        // not necessary for lab1
+        if (dirty) {
+            this.dirty = tid;
+        } else {
+            this.dirty = null;
+        }
     }
 
     /**
@@ -344,9 +348,7 @@ public class HeapPage implements Page {
      */
     @Override
     public TransactionId isDirty() {
-        // some code goes here
-        // Not necessary for lab1
-        return null;
+        return dirty;
     }
 
     /**

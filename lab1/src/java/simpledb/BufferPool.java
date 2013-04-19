@@ -2,7 +2,9 @@ package simpledb;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from disk. Access methods call into it to retrieve
@@ -25,6 +27,7 @@ public class BufferPool {
 
     private final int maxPages;
     private final Map<PageId, Page> pages;
+    private final Queue<PageId> lru;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -35,6 +38,7 @@ public class BufferPool {
     public BufferPool(int numPages) {
         maxPages = numPages;
         pages = new ConcurrentHashMap<PageId, Page>(maxPages, 1f); // We know the exact size to make this...
+        lru = new ConcurrentLinkedQueue<PageId>();
     }
 
     /**
@@ -57,17 +61,22 @@ public class BufferPool {
      * @throws DbException
      *             if the database throws an exception.
      * @throws IllegalArgumentException
-     *             if any of the arguments are null.
+     *             if pid or perm are null.
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm) throws TransactionAbortedException,
             DbException {
-        if (tid == null || pid == null || perm == null) {
+        if (pid == null || perm == null) {
             throw new IllegalArgumentException();
         }
 
-        if (pages.containsKey(pid)) {
+        // Resets the pid if it exists, or just adds if it doesn't.
+        lru.remove(pid);
+        lru.add(pid);
+
+        if (pages.containsKey(pid)) { // If it already exists, grab it and remove it from lru to reset it.
             return pages.get(pid);
         }
+
         if (pages.size() >= maxPages) {
             evictPage();
         }
@@ -78,7 +87,6 @@ public class BufferPool {
         Page page = file.readPage(pid);
 
         pages.put(pid, page);
-
         return page;
     }
 
@@ -170,8 +178,9 @@ public class BufferPool {
      * simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        // some code goes here
-        // not necessary for lab1
+        for (PageId pid : pages.keySet()) {
+            flushPage(pid);
+        }
 
     }
 
@@ -189,10 +198,18 @@ public class BufferPool {
      * 
      * @param pid
      *            an ID indicating the page to flush
+     * 
+     * @throws IOException
+     *             thrown if an IO exception occurs
      */
     private synchronized void flushPage(PageId pid) throws IOException {
-        // some code goes here
-        // not necessary for lab1
+        Page page = pages.get(pid);
+
+        if (page.isDirty() != null) {
+            DbFile file = Database.getCatalog().getDbFile(pid.getTableId());
+            file.writePage(page);
+            page.markDirty(false, null);
+        }
     }
 
     /**
@@ -207,8 +224,13 @@ public class BufferPool {
      * Discards a page from the buffer pool. Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized void evictPage() throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        PageId pid = lru.poll();
+        try {
+            flushPage(pid);
+        } catch (IOException ex) {
+            throw new DbException("Error while flushing page: " + ex.getMessage());
+        }
+        pages.remove(pid);
     }
 
 }
