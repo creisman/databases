@@ -1,22 +1,27 @@
 package simpledb;
 
-import java.util.*;
+import java.util.NoSuchElementException;
 
 /**
- * The Aggregation operator that computes an aggregate (e.g., sum, avg, max,
- * min). Note that we only support aggregates over a single column, grouped by a
- * single column.
+ * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). Note that we only support aggregates
+ * over a single column, grouped by a single column.
  */
 public class Aggregate extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private DbIterator child;
+    private final int aField;
+    private final int gField;
+    private final Aggregator.Op op;
+    private Aggregator agg;
+    private DbIterator itr;
+
     /**
      * Constructor.
      * 
-     * Implementation hint: depending on the type of afield, you will want to
-     * construct an {@link IntAggregator} or {@link StringAggregator} to help
-     * you with your implementation of readNext().
+     * Implementation hint: depending on the type of afield, you will want to construct an {@link IntegerAggregator} or
+     * {@link StringAggregator} to help you with your implementation of readNext().
      * 
      * 
      * @param child
@@ -24,114 +29,166 @@ public class Aggregate extends Operator {
      * @param afield
      *            The column over which we are computing an aggregate.
      * @param gfield
-     *            The column over which we are grouping the result, or -1 if
-     *            there is no grouping
+     *            The column over which we are grouping the result, or {@link Aggregator#NO_GROUPING} if there is no
+     *            grouping
      * @param aop
      *            The aggregation operator to use
      */
     public Aggregate(DbIterator child, int afield, int gfield, Aggregator.Op aop) {
-	// some code goes here
+        this.child = child;
+        aField = afield;
+        gField = gfield;
+        op = aop;
+
+        // Load my Aggregator and TupleDesc.
+        reset();
     }
 
     /**
-     * @return If this aggregate is accompanied by a groupby, return the groupby
-     *         field index in the <b>INPUT</b> tuples. If not, return
-     *         {@link simpledb.Aggregator#NO_GROUPING}
+     * @return If this aggregate is accompanied by a groupby, return the groupby field index in the <b>INPUT</b> tuples.
+     *         If not, return {@link simpledb.Aggregator#NO_GROUPING}
      * */
     public int groupField() {
-	// some code goes here
-	return -1;
+        return gField;
     }
 
     /**
-     * @return If this aggregate is accompanied by a group by, return the name
-     *         of the groupby field in the <b>OUTPUT</b> tuples If not, return
-     *         null;
+     * @return If this aggregate is accompanied by a group by, return the name of the groupby field in the <b>OUTPUT</b>
+     *         tuples If not, return null;
      * */
     public String groupFieldName() {
-	// some code goes here
-	return null;
+        // some code goes here
+        return null;
     }
 
     /**
      * @return the aggregate field
      * */
     public int aggregateField() {
-	// some code goes here
-	return -1;
+        return aField;
     }
 
     /**
-     * @return return the name of the aggregate field in the <b>OUTPUT</b>
-     *         tuples
+     * @return return the name of the aggregate field in the <b>OUTPUT</b> tuples
      * */
     public String aggregateFieldName() {
-	// some code goes here
-	return null;
+        // some code goes here
+        return null;
     }
 
     /**
      * @return return the aggregate operator
      * */
     public Aggregator.Op aggregateOp() {
-	// some code goes here
-	return null;
-    }
-
-    public static String nameOfAggregatorOp(Aggregator.Op aop) {
-	return aop.toString();
-    }
-
-    public void open() throws NoSuchElementException, DbException,
-	    TransactionAbortedException {
-	// some code goes here
+        return op;
     }
 
     /**
-     * Returns the next tuple. If there is a group by field, then the first
-     * field is the field by which we are grouping, and the second field is the
-     * result of computing the aggregate, If there is no group by field, then
-     * the result tuple should contain one field representing the result of the
-     * aggregate. Should return null if there are no more tuples.
+     * @param aop
+     *            the op to get the name for.
+     * 
+     * @return The name of the given op.
      */
-    protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-	// some code goes here
-	return null;
-    }
-
-    public void rewind() throws DbException, TransactionAbortedException {
-	// some code goes here
+    public static String nameOfAggregatorOp(Aggregator.Op aop) {
+        return aop.toString();
     }
 
     /**
-     * Returns the TupleDesc of this Aggregate. If there is no group by field,
-     * this will have one field - the aggregate column. If there is a group by
-     * field, the first field will be the group by field, and the second will be
-     * the aggregate value column.
+     * @see simpledb.Operator#open()
+     */
+    @Override
+    public void open() throws NoSuchElementException, DbException, TransactionAbortedException {
+        if (itr == null) {
+            child.open();
+            while (child.hasNext()) {
+                agg.mergeTupleIntoGroup(child.next());
+            }
+            child.close();
+
+            itr = agg.iterator();
+        }
+
+        itr.open();
+        super.open();
+    }
+
+    /**
+     * Returns the next tuple. If there is a group by field, then the first field is the field by which we are grouping,
+     * and the second field is the result of computing the aggregate, If there is no group by field, then the result
+     * tuple should contain one field representing the result of the aggregate. Should return null if there are no more
+     * tuples.
+     */
+    @Override
+    protected Tuple fetchNext() throws TransactionAbortedException, DbException {
+        if (!itr.hasNext()) {
+            return null;
+        }
+
+        return itr.next();
+    }
+
+    /**
+     * @see simpledb.DbIterator#rewind()
+     */
+    @Override
+    public void rewind() throws DbException, TransactionAbortedException {
+        close();
+        open();
+    }
+
+    /**
+     * Returns the TupleDesc of this Aggregate. If there is no group by field, this will have one field - the aggregate
+     * column. If there is a group by field, the first field will be the group by field, and the second will be the
+     * aggregate value column.
      * 
      * The name of an aggregate column should be informative. For example:
-     * "aggName(aop) (child_td.getFieldName(afield))" where aop and afield are
-     * given in the constructor, and child_td is the TupleDesc of the child
-     * iterator.
+     * "aggName(aop) (child_td.getFieldName(afield))" where aop and afield are given in the constructor, and child_td is
+     * the TupleDesc of the child iterator.
      */
+    @Override
     public TupleDesc getTupleDesc() {
-	// some code goes here
-	return null;
+        return agg.getTupleDesc();
     }
 
+    /**
+     * @see simpledb.Operator#close()
+     */
+    @Override
     public void close() {
-	// some code goes here
+        super.close();
+        itr.close();
     }
 
+    /**
+     * @see simpledb.Operator#getChildren()
+     */
     @Override
     public DbIterator[] getChildren() {
-	// some code goes here
-	return null;
+        return new DbIterator[] { child };
     }
 
+    /**
+     * @see simpledb.Operator#setChildren(simpledb.DbIterator[])
+     */
     @Override
     public void setChildren(DbIterator[] children) {
-	// some code goes here
+        close();
+        child = children[0];
+        reset();
     }
-    
+
+    /**
+     * This method resets changeable data, such as the Aggregator and TupleDesc.
+     */
+    private void reset() {
+        TupleDesc childTd = child.getTupleDesc();
+        Type gFieldType = gField == Aggregator.NO_GROUPING ? null : childTd.getFieldType(gField);
+        String gbFieldName = gField == Aggregator.NO_GROUPING ? null : childTd.getFieldName(gField);
+        String aggFieldName = childTd.getFieldName(aField);
+        if (childTd.getFieldType(aField) == Type.INT_TYPE) {
+            agg = new IntegerAggregator(gField, gFieldType, aField, op, gbFieldName, aggFieldName);
+        } else {
+            agg = new StringAggregator(gField, gFieldType, aField, op, gbFieldName, aggFieldName);
+        }
+    }
 }
