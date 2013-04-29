@@ -74,7 +74,7 @@ public class HeapPage implements Page {
             for (int j = 0; j < 8; j++) {
                 // If a slot is empty, add it to the empty list.
                 int val = i * 8 + j;
-                if (!isSlotUsed(val)) {
+                if (val < numSlots && !isSlotUsed(val)) {
                     emptySlots.add(val);
                 }
             }
