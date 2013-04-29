@@ -302,6 +302,7 @@ public class HeapPage implements Page {
         markSlotUsed(i, false);
         t.setRecordId(null);
         tuples[i] = null;
+        emptySlots.add(i);
     }
 
     /**
@@ -397,7 +398,7 @@ public class HeapPage implements Page {
             mask = ~mask;
             cur &= (byte) mask;
         }
-        header[i] = cur;
+        header[index] = cur;
     }
 
     /**
