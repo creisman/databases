@@ -10,3 +10,9 @@ This should either take a TupleDesc or names for the columns so I don't have to 
 
 Field
 Fields don't bother to check types before doing compare.
+
+HeapFile
+Going through the BufferPool means it's returned as a Page, so I have to cast to a HeapPage, which sucks.
+
+Page
+You don't build into the interface a way to add a new page to a file so I have to cast again.
