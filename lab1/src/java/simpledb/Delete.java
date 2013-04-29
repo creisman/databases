@@ -1,66 +1,116 @@
 package simpledb;
 
 /**
- * The delete operator. Delete reads tuples from its child operator and removes
- * them from the table they belong to.
+ * The delete operator. Delete reads tuples from its child operator and removes them from the table they belong to.
  */
 public class Delete extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private DbIterator child;
+    private final TransactionId tid;
+    private final TupleDesc desc;
+
+    private boolean hasRun;
+
     /**
-     * Constructor specifying the transaction that this delete belongs to as
-     * well as the child to read from.
+     * Constructor.
      * 
      * @param t
-     *            The transaction this delete runs in
+     *            The transaction running the insert.
      * @param child
-     *            The child operator from which to read tuples for deletion
+     *            The child operator from which to read tuples to be inserted.
+     * @throws DbException
+     *             if TupleDesc of child differs from table into which we are to insert.
      */
-    public Delete(TransactionId t, DbIterator child) {
-        // some code goes here
-    }
-
-    public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
-    }
-
-    public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
-    }
-
-    public void close() {
-        // some code goes here
-    }
-
-    public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+    public Delete(TransactionId t, DbIterator child) throws DbException {
+        tid = t;
+        this.child = child;
+        desc = new TupleDesc(new Type[] { Type.INT_TYPE }, new String[] { "rowsAffected" });
+        hasRun = false;
     }
 
     /**
-     * Deletes tuples as they are read from the child operator. Deletes are
-     * processed via the buffer pool (which can be accessed via the
-     * Database.getBufferPool() method.
-     * 
-     * @return A 1-field tuple containing the number of deleted records.
-     * @see Database#getBufferPool
-     * @see BufferPool#deleteTuple
+     * @see simpledb.Operator#getTupleDesc()
      */
-    protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+    @Override
+    public TupleDesc getTupleDesc() {
+        return desc;
     }
 
+    /**
+     * @see simpledb.Operator#open()
+     */
+    @Override
+    public void open() throws DbException, TransactionAbortedException {
+        child.open();
+        hasRun = false;
+        super.open();
+    }
+
+    /**
+     * @see simpledb.Operator#close()
+     */
+    @Override
+    public void close() {
+        super.close();
+        child.close();
+    }
+
+    /**
+     * @see simpledb.DbIterator#rewind()
+     */
+    @Override
+    public void rewind() throws DbException, TransactionAbortedException {
+        close();
+        open();
+    }
+
+    /**
+     * Inserts tuples read from child into the tableid specified by the constructor. It returns a one field tuple
+     * containing the number of inserted records. Inserts should be passed through BufferPool. An instances of
+     * BufferPool is available via Database.getBufferPool(). Note that insert DOES NOT need check to see if a particular
+     * tuple is a duplicate before inserting it.
+     * 
+     * @return A 1-field tuple containing the number of inserted records, or null if called more than once.
+     * @see Database#getBufferPool
+     * @see BufferPool#insertTuple
+     */
+    @Override
+    protected Tuple fetchNext() throws TransactionAbortedException, DbException {
+        if (hasRun) {
+            return null;
+        }
+
+        hasRun = true;
+
+        int count = 0;
+        while (child.hasNext()) {
+            count++;
+
+            Database.getBufferPool().deleteTuple(tid, child.next());
+        }
+
+        Tuple tup = new Tuple(desc);
+        tup.setField(0, new IntField(count));
+
+        return tup;
+    }
+
+    /**
+     * @see simpledb.Operator#getChildren()
+     */
     @Override
     public DbIterator[] getChildren() {
-        // some code goes here
-        return null;
+        return new DbIterator[] { child };
     }
 
+    /**
+     * @see simpledb.Operator#setChildren(simpledb.DbIterator[])
+     */
     @Override
     public void setChildren(DbIterator[] children) {
-        // some code goes here
+        close();
+        child = children[0];
     }
-
 }
