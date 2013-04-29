@@ -1,6 +1,7 @@
 package simpledb;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -103,14 +104,11 @@ public class BufferPool {
      *             Thrown if the transaction is aborted.
      * @throws DbException
      *             Thrown if there is an error.
+     * @throws IOException
+     *             Thrown if there is an IO error.
      */
-    public Page addPage(TransactionId tid, int tableId) throws TransactionAbortedException, DbException {
-        int pageNum = 0;
-        try {
-            pageNum = ((HeapFile) Database.getCatalog().getDbFile(tableId)).addPage();
-        } catch (IOException ex) {
-            throw new DbException(ex.getMessage());
-        }
+    public Page addPage(TransactionId tid, int tableId) throws TransactionAbortedException, DbException, IOException {
+        int pageNum = ((HeapFile) Database.getCatalog().getDbFile(tableId)).addPage();
 
         return getPage(tid, new HeapPageId(tableId, pageNum), Permissions.READ_WRITE);
     }
@@ -173,11 +171,18 @@ public class BufferPool {
      *            the table to add the tuple to
      * @param t
      *            the tuple to add
+     * 
+     * @throws DbException
+     * @throws IOException
+     * @throws TransactionAbortedException
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t) throws DbException, IOException,
             TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        List<Page> pages = Database.getCatalog().getDbFile(tableId).insertTuple(tid, t);
+
+        for (Page page : pages) {
+            page.markDirty(true, tid);
+        }
     }
 
     /**
@@ -194,8 +199,9 @@ public class BufferPool {
      *            the tuple to delete
      */
     public void deleteTuple(TransactionId tid, Tuple t) throws DbException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        Page page = Database.getCatalog().getDbFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
+
+        page.markDirty(true, tid);
     }
 
     /**
