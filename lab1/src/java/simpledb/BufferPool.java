@@ -73,7 +73,7 @@ public class BufferPool {
         lru.remove(pid);
         lru.add(pid);
 
-        if (pages.containsKey(pid)) { // If it already exists, grab it and remove it from lru to reset it.
+        if (pages.containsKey(pid)) { // If it already exists, grab it.
             return pages.get(pid);
         }
 
@@ -88,6 +88,31 @@ public class BufferPool {
 
         pages.put(pid, page);
         return page;
+    }
+
+    /**
+     * Adds an empty page to the page represented by the given table id and adds it to the BufferPool.
+     * 
+     * @param tid
+     *            The transaction to add the page for.
+     * @param tableId
+     *            The table to add a page to
+     * @return The newly created page
+     * 
+     * @throws TransactionAbortedException
+     *             Thrown if the transaction is aborted.
+     * @throws DbException
+     *             Thrown if there is an error.
+     */
+    public Page addPage(TransactionId tid, int tableId) throws TransactionAbortedException, DbException {
+        int pageNum = 0;
+        try {
+            pageNum = ((HeapFile) Database.getCatalog().getDbFile(tableId)).addPage();
+        } catch (IOException ex) {
+            throw new DbException(ex.getMessage());
+        }
+
+        return getPage(tid, new HeapPageId(tableId, pageNum), Permissions.READ_WRITE);
     }
 
     /**
