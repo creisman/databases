@@ -329,6 +329,7 @@ public class HeapPage implements Page {
         RecordId rid = new RecordId(pid, slotId); // Update tuples rid.
         t.setRecordId(rid);
         tuples[slotId] = t;
+        indexLookup.put(t, slotId);
         markSlotUsed(slotId, true);
     }
 
