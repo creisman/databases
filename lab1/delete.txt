@@ -1,0 +1,2 @@
+delete from simpledb
+where c1 = 1;
