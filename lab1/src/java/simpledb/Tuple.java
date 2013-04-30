@@ -221,6 +221,6 @@ public class Tuple implements Serializable, Iterable<Field> {
      */
     @Override
     public int hashCode() {
-        return schema.hashCode() + id.hashCode() + fields.hashCode();
+        return schema.hashCode() + (id == null ? 37 : id.hashCode()) + fields.hashCode();
     }
 }
