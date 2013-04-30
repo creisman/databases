@@ -269,7 +269,7 @@ public class TupleDesc implements Serializable, Iterable<TDItem> {
          */
         @Override
         public int hashCode() {
-            return fieldName.hashCode() + fieldType.hashCode();
+            return fieldType.hashCode();
         }
 
         /**

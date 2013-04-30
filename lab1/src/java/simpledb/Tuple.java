@@ -180,4 +180,47 @@ public class Tuple implements Serializable, Iterable<Field> {
 
         return ret;
     }
+
+    /**
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof Tuple)) {
+            return false;
+        }
+
+        Tuple tup = (Tuple) other;
+
+        if (!(tup.id == null && id == null || tup.id != null && tup.id.equals(id))) {
+            return false;
+        }
+
+        if (!tup.schema.equals(schema)) {
+            return false;
+        }
+
+        Iterator<Field> oItr = tup.fields.iterator();
+        Iterator<Field> itr = fields.iterator();
+
+        // Size is guaranteed to be the same since schema is same.
+        while (oItr.hasNext()) {
+            Field oField = oItr.next();
+            Field field = itr.next();
+
+            if (!(field == null && oField == null || field != null && field.equals(oField))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode() {
+        return schema.hashCode() + id.hashCode() + fields.hashCode();
+    }
 }
