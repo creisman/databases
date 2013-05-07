@@ -142,11 +142,12 @@ public class HeapFile implements DbFile {
     /**
      * Writes a new empty page to the file.
      * 
+     * @return The page number of the added page.
+     * 
      * @throws IOException
      *             if there is a problem writing.
      */
     public int addPage() throws IOException {
-        System.out.println("Initial size: " + numPages());
         FileOutputStream out = null;
         try {
             out = new FileOutputStream(file, true);
@@ -160,7 +161,6 @@ public class HeapFile implements DbFile {
                 }
             }
         }
-        System.out.println("End size: " + numPages());
         return numPages() - 1;
     }
 
@@ -172,17 +172,23 @@ public class HeapFile implements DbFile {
             TransactionAbortedException {
         int pageNum = 0;
 
-        HeapPage page;
+        HeapPage page = null;
         do {
+            if (page != null) {
+                Database.getBufferPool().releasePage(tid, page.getId());
+            }
+
             PageId pid = new HeapPageId(id, pageNum++);
 
             if (pid.pageNumber() >= numPages()) {
-                page = (HeapPage) Database.getBufferPool().addPage(tid, id);
+                page = (HeapPage) Database.getBufferPool().addPage(tid, id, Permissions.READ_ONLY);
             } else {
-                page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+                page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_ONLY);
             }
-
         } while (page.getNumEmptySlots() == 0);
+
+        // Get the page with proper permissions.
+        page = (HeapPage) Database.getBufferPool().getPage(tid, page.getId(), Permissions.READ_WRITE);
 
         page.insertTuple(t);
 

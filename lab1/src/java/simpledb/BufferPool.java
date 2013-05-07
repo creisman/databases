@@ -29,6 +29,7 @@ public class BufferPool {
     private final int maxPages;
     private final Map<PageId, Page> pages;
     private final Queue<PageId> lru;
+    private final LockManager locks;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -40,6 +41,7 @@ public class BufferPool {
         maxPages = numPages;
         pages = new ConcurrentHashMap<PageId, Page>(maxPages, 1f); // We know the exact size to make this...
         lru = new ConcurrentLinkedQueue<PageId>();
+        locks = new LockManager();
     }
 
     /**
@@ -70,6 +72,8 @@ public class BufferPool {
             throw new IllegalArgumentException();
         }
 
+        locks.getLock(tid, pid, perm);
+
         // Resets the pid if it exists, or just adds if it doesn't.
         lru.remove(pid);
         lru.add(pid);
@@ -98,6 +102,9 @@ public class BufferPool {
      *            The transaction to add the page for.
      * @param tableId
      *            The table to add a page to
+     * @param perm
+     *            The permissions to grant the new page.
+     * 
      * @return The newly created page
      * 
      * @throws TransactionAbortedException
@@ -107,10 +114,16 @@ public class BufferPool {
      * @throws IOException
      *             Thrown if there is an IO error.
      */
-    public Page addPage(TransactionId tid, int tableId) throws TransactionAbortedException, DbException, IOException {
-        int pageNum = ((HeapFile) Database.getCatalog().getDbFile(tableId)).addPage();
+    public Page addPage(TransactionId tid, int tableId, Permissions perm) throws TransactionAbortedException,
+            DbException, IOException {
+        HeapFile file = (HeapFile) Database.getCatalog().getDbFile(tableId);
 
-        return getPage(tid, new HeapPageId(tableId, pageNum), Permissions.READ_WRITE);
+        PageId pid = new HeapPageId(tableId, file.numPages());
+        locks.getLock(tid, pid, perm);
+
+        file.addPage();
+
+        return getPage(tid, pid, perm);
     }
 
     /**
@@ -123,8 +136,7 @@ public class BufferPool {
      *            the ID of the page to unlock
      */
     public void releasePage(TransactionId tid, PageId pid) {
-        // some code goes here
-        // not necessary for lab1|lab2
+        locks.releaseLock(tid, pid);
     }
 
     /**
@@ -134,15 +146,12 @@ public class BufferPool {
      *            the ID of the transaction requesting the unlock
      */
     public void transactionComplete(TransactionId tid) throws IOException {
-        // some code goes here
-        // not necessary for lab1|lab2
+        transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
-    public boolean holdsLock(TransactionId tid, PageId p) {
-        // some code goes here
-        // not necessary for lab1|lab2
-        return false;
+    public boolean holdsLock(TransactionId tid, PageId pid) {
+        return locks.holdsLock(tid, pid);
     }
 
     /**
