@@ -1,18 +1,5 @@
-Aggregate
-The @link in the constructor says IntAggregator instead of IntegerAggregator.
-The constructor header should specify Aggregator#NO_GROUPING, not -1.
-aggregateFieldName/groupFieldName doesn't follow standard naming.
+BufferPool
+We check if a transaction holds a lock for a page... But not WHICH lock it holds!
 
-Aggregator
-You don't specify the behavior if the results are empty.
-The naming convention is off (and 'what' is a terrible name).
-This should either take a TupleDesc or names for the columns so I don't have to implement it multiple times...
-
-Field
-Fields don't bother to check types before doing compare.
-
-HeapFile
-Going through the BufferPool means it's returned as a Page, so I have to cast to a HeapPage, which sucks.
-
-DbFile
-You don't build into the interface a way to add a new page to a file so I have to cast again.
+Page.java
+Any method that starts with is* should return a boolean in proper Java convention.
