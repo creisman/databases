@@ -1,8 +1,10 @@
 package simpledb;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,6 +30,9 @@ public class BufferPool {
 
     private final int maxPages;
     private final Map<PageId, Page> pages;
+    // I CANNOT just use pages.size(), because when I'm evicting and/or adding a new page the size changes so another
+    // thread could take advantage of the evicted page as well as the calling thread.
+    private int numPages;
     private final Queue<PageId> lru;
     private final LockManager locks;
 
@@ -42,6 +47,7 @@ public class BufferPool {
         pages = new ConcurrentHashMap<PageId, Page>(maxPages, 1f); // We know the exact size to make this...
         lru = new ConcurrentLinkedQueue<PageId>();
         locks = new LockManager();
+        numPages = 0;
     }
 
     /**
@@ -74,22 +80,40 @@ public class BufferPool {
 
         locks.getLock(tid, pid, perm);
 
-        // Resets the pid if it exists, or just adds if it doesn't.
-        lru.remove(pid);
-        lru.add(pid);
-
-        if (pages.containsKey(pid)) { // If it already exists, grab it.
-            return pages.get(pid);
+        // Resets the pid if it exists, or just adds if it doesn't. Must be synchronized in case it gets preempted
+        // in the middle.
+        synchronized (lru) {
+            lru.remove(pid);
+            lru.add(pid);
         }
 
-        if (pages.size() >= maxPages) {
-            evictPage();
+        // XXX something is wrong with evict.
+        // XXX I can't immediately re add because I could then evict myself.
+        // XXX The marking dirty must apply to returning pages as well as new pages!
+
+        // This section must be synchronized so that one thread doesn't evict a page and another load a page.
+        synchronized (this) {
+            if (pages.containsKey(pid)) { // If it already exists, grab it.
+                return pages.get(pid);
+            }
+
+            if (pages.size() >= maxPages) {
+                evictPage();
+            }
+            // I'm going to add a page, but for the sake of getting out of the synchronized block, increment it here.
+            numPages++;
         }
 
         Catalog cat = Database.getCatalog();
 
         DbFile file = cat.getDbFile(pid.getTableId());
         Page page = file.readPage(pid);
+
+        // I must assume it will be marked dirty to prevent it from being evicted after it is returned but before it is
+        // dirtied.
+        if (perm == Permissions.READ_WRITE) {
+            page.markDirty(true, tid);
+        }
 
         pages.put(pid, page);
         return page;
@@ -139,6 +163,11 @@ public class BufferPool {
         locks.releaseLock(tid, pid);
     }
 
+    /** Return true if the specified transaction has a lock on the specified page */
+    public boolean holdsLock(TransactionId tid, PageId pid) {
+        return locks.holdsLock(tid, pid);
+    }
+
     /**
      * Release all locks associated with a given transaction.
      * 
@@ -147,11 +176,6 @@ public class BufferPool {
      */
     public void transactionComplete(TransactionId tid) throws IOException {
         transactionComplete(tid, true);
-    }
-
-    /** Return true if the specified transaction has a lock on the specified page */
-    public boolean holdsLock(TransactionId tid, PageId pid) {
-        return locks.holdsLock(tid, pid);
     }
 
     /**
@@ -163,8 +187,9 @@ public class BufferPool {
      *            a flag indicating whether we should commit or abort
      */
     public void transactionComplete(TransactionId tid, boolean commit) throws IOException {
-        // some code goes here
-        // not necessary for lab1|lab2
+        cleanPages(tid, commit);
+
+        locks.releaseLocks(tid);
     }
 
     /**
@@ -229,8 +254,11 @@ public class BufferPool {
      * doesn't keep a rolled back page in its cache.
      */
     public synchronized void discardPage(PageId pid) {
-        // some code goes here
-        // only necessary for lab5
+        synchronized (lru) {
+            lru.remove(pid);
+        }
+
+        pages.remove(pid);
     }
 
     /**
@@ -256,22 +284,45 @@ public class BufferPool {
      * Write all pages of the specified transaction to disk.
      */
     public synchronized void flushPages(TransactionId tid) throws IOException {
-        // some code goes here
-        // not necessary for lab1|lab2
+        cleanPages(tid, true);
     }
 
     /**
      * Discards a page from the buffer pool. Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized void evictPage() throws DbException {
-        // XXX I might evict a page that has a lock.
-        PageId pid = lru.poll();
-        try {
-            flushPage(pid);
-        } catch (IOException ex) {
-            throw new DbException("Error while flushing page: " + ex.getMessage());
+        synchronized (lru) {
+            Iterator<PageId> itr = lru.iterator();
+
+            while (itr.hasNext()) {
+                PageId pid = itr.next();
+
+                if (pages.get(pid).isDirty() == null) {
+                    numPages--;
+                    itr.remove();
+                    pages.remove(pid);
+                    break;
+                }
+            }
         }
-        pages.remove(pid);
+
+        // No clean pages found.
+        throw new DbException("No clean pages to evict.");
     }
 
+    private synchronized void cleanPages(TransactionId tid, boolean flush) {
+        for (Entry<PageId, Page> entry : pages.entrySet()) {
+            if (tid != null && entry.getValue().isDirty() != null && tid.equals(entry.getValue().isDirty())) {
+                if (flush) {
+                    try {
+                        flushPage(entry.getKey());
+                    } catch (IOException ex) {
+                        throw new RuntimeException("Error flushing page to disk.");
+                    }
+                } else {
+                    discardPage(entry.getKey());
+                }
+            }
+        }
+    }
 }

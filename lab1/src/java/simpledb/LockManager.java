@@ -48,4 +48,10 @@ public class LockManager {
 
         lock.releaseLocks(tid);
     }
+
+    public void releaseLocks(TransactionId tid) {
+        for (UpgradeableReentrantReadWriteLock lock : locks.values()) {
+            lock.releaseLocks(tid);
+        }
+    }
 }
