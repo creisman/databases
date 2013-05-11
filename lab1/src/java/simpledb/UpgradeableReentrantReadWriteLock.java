@@ -3,12 +3,11 @@
  */
 package simpledb;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.mina.util.ConcurrentHashSet;
 
 /**
  * A reentrant lock supporting both reads and writes, and upgrading from read to write. Locking is based on
@@ -34,8 +33,8 @@ public class UpgradeableReentrantReadWriteLock {
         mutex = new ReentrantLock();
         noReaders = mutex.newCondition();
         noWriters = mutex.newCondition();
-        readers = new ConcurrentHashSet<TransactionId>();
-        writers = new ConcurrentHashSet<TransactionId>();
+        readers = new HashSet<TransactionId>();
+        writers = new HashSet<TransactionId>();
         writerWaiting = 0;
     }
 
