@@ -147,7 +147,7 @@ public class HeapFile implements DbFile {
      * @throws IOException
      *             if there is a problem writing.
      */
-    public synchronized int addPage() throws IOException {
+    public int addPage() throws IOException {
         FileOutputStream out = null;
         try {
             out = new FileOutputStream(file, true);
