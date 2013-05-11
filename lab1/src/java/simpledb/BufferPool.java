@@ -264,6 +264,7 @@ public class BufferPool {
      * Discards a page from the buffer pool. Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized void evictPage() throws DbException {
+        // XXX I might evict a page that has a lock.
         PageId pid = lru.poll();
         try {
             flushPage(pid);
