@@ -301,7 +301,7 @@ public class BufferPool {
                     numPages--;
                     itr.remove();
                     pages.remove(pid);
-                    break;
+                    return;
                 }
             }
         }
