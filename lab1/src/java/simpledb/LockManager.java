@@ -15,6 +15,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  */
 public class LockManager {
+	public static final int TIMEOUT = 100;
+	
     private final Lock locksMutator;
     private final Map<PageId, UpgradeableReentrantReadWriteLock> locks;
 
@@ -27,10 +29,10 @@ public class LockManager {
         return locks.get(pid).holdsLock(tid);
     }
 
-    public void getLock(TransactionId tid, PageId pid, Permissions perm) {
+    public void getLock(TransactionId tid, PageId pid, Permissions perm) throws TransactionAbortedException {
         locksMutator.lock();
         if (!locks.containsKey(pid)) {
-            locks.put(pid, new UpgradeableReentrantReadWriteLock());
+            locks.put(pid, new UpgradeableReentrantReadWriteLock(TIMEOUT));
         }
         locksMutator.unlock();
 
