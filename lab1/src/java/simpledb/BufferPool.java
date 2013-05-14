@@ -30,9 +30,6 @@ public class BufferPool {
 
     private final int maxPages;
     private final Map<PageId, Page> pages;
-    // I CANNOT just use pages.size(), because when I'm evicting and/or adding a new page the size changes so another
-    // thread could take advantage of the evicted page as well as the calling thread.
-    private int numPages;
     private final Queue<PageId> lru;
     private final LockManager locks;
 
@@ -47,7 +44,6 @@ public class BufferPool {
         pages = new ConcurrentHashMap<PageId, Page>(maxPages, 1f); // We know the exact size to make this...
         lru = new ConcurrentLinkedQueue<PageId>();
         locks = new LockManager();
-        numPages = 0;
     }
 
     /**
@@ -80,43 +76,34 @@ public class BufferPool {
 
         locks.getLock(tid, pid, perm);
 
-        // Resets the pid if it exists, or just adds if it doesn't. Must be synchronized in case it gets preempted
-        // in the middle.
-        synchronized (lru) {
-            lru.remove(pid);
-            lru.add(pid);
-        }
-
-        // XXX something is wrong with evict.
-        // XXX I can't immediately re add because I could then evict myself.
-        // XXX The marking dirty must apply to returning pages as well as new pages!
-
         // This section must be synchronized so that one thread doesn't evict a page and another load a page.
         synchronized (this) {
             if (pages.containsKey(pid)) { // If it already exists, grab it.
+                // Resets the pid if it exists, or just adds if it doesn't. Must be synchronized in case it gets
+                // preempted
+                // in the middle.
+                synchronized (lru) {
+                    lru.remove(pid);
+                    lru.add(pid);
+                }
                 return pages.get(pid);
             }
 
+            // If I have the page already, I don't want to evict it.
             if (pages.size() >= maxPages) {
                 evictPage();
             }
-            // I'm going to add a page, but for the sake of getting out of the synchronized block, increment it here.
-            numPages++;
+
+            Catalog cat = Database.getCatalog();
+
+            DbFile file = cat.getDbFile(pid.getTableId());
+            Page page = file.readPage(pid);
+
+            pages.put(pid, page);
+            lru.add(pid);
+
+            return page;
         }
-
-        Catalog cat = Database.getCatalog();
-
-        DbFile file = cat.getDbFile(pid.getTableId());
-        Page page = file.readPage(pid);
-
-        // I must assume it will be marked dirty to prevent it from being evicted after it is returned but before it is
-        // dirtied.
-        if (perm == Permissions.READ_WRITE) {
-            page.markDirty(true, tid);
-        }
-
-        pages.put(pid, page);
-        return page;
     }
 
     /**
@@ -246,7 +233,6 @@ public class BufferPool {
         for (PageId pid : pages.keySet()) {
             flushPage(pid);
         }
-
     }
 
     /**
@@ -298,7 +284,6 @@ public class BufferPool {
                 PageId pid = itr.next();
 
                 if (pages.get(pid).isDirty() == null) {
-                    numPages--;
                     itr.remove();
                     pages.remove(pid);
                     return;
