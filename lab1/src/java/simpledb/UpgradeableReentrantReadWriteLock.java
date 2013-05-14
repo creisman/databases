@@ -71,29 +71,26 @@ public class UpgradeableReentrantReadWriteLock {
     public void getReadLock(TransactionId tid) throws TransactionAbortedException {
         mutex.lock();
 
-        if (!readers.contains(tid)) {
-            // Continue only if it has the write lock or there's no writer
-            // waiting or holding the lock.
-            while (!writers.contains(tid) && (writersWaiting != 0 || writers.size() != 0)) {
-                try {
-                    if (timeoutMin <= 0) {
-                        noWriters.await();
-                    } else {
-                        int timeout = (timeoutRange != 0 ? rand.nextInt(timeoutRange) : 0) + timeoutMin;
-                        boolean ret = noWriters.await(timeout, TimeUnit.MILLISECONDS);
-                        if (!ret) {
-                            // I MUST release the lock.
-                            mutex.unlock();
-                            throw new TransactionAbortedException();
-                        }
+        // Continue only if it has the write/read lock or there's no writer waiting or holding the lock.
+        while (!readers.contains(tid) && !writers.contains(tid) && (writersWaiting != 0 || writers.size() != 0)) {
+            try {
+                if (timeoutMin <= 0) {
+                    noWriters.await();
+                } else {
+                    int timeout = (timeoutRange != 0 ? rand.nextInt(timeoutRange) : 0) + timeoutMin;
+                    boolean ret = noWriters.await(timeout, TimeUnit.MILLISECONDS);
+                    if (!ret) {
+                        // I MUST release the lock.
+                        mutex.unlock();
+                        throw new TransactionAbortedException();
                     }
-                } catch (InterruptedException ex) {
-                    mutex.unlock();
-                    throw new RuntimeException();
                 }
+            } catch (InterruptedException ex) {
+                mutex.unlock();
+                throw new RuntimeException();
             }
-            readers.add(tid);
         }
+        readers.add(tid);
         mutex.unlock();
     }
 
@@ -118,8 +115,7 @@ public class UpgradeableReentrantReadWriteLock {
         readers.remove(tid);
 
         if (readers.size() == 1 || readers.size() == 0) {
-            // Wake up all threads in case one of them is the writer that holds
-            // the last read.
+            // Wake up all threads in case one of them is the writer that holds the last read.
             noReaders.signalAll();
         }
 
@@ -137,33 +133,32 @@ public class UpgradeableReentrantReadWriteLock {
     public void getWriteLock(TransactionId tid) throws TransactionAbortedException {
         mutex.lock();
 
-        if (!writers.contains(tid)) {
-            writersWaiting++;
-            // Continue only if there are no writers and no readers, or the only reader is the
-            // thread requesting the write lock.
-            while (writers.size() != 0 || readers.size() != 0 && (readers.size() != 1 || !readers.contains(tid))) {
-                try {
-                    if (timeoutMin <= 0) {
-                        noReaders.await();
-                    } else {
-                        int timeout = (timeoutRange != 0 ? rand.nextInt(timeoutRange) : 0) + timeoutMin;
-                        boolean ret = noReaders.await(timeout, TimeUnit.MILLISECONDS);
-                        if (!ret) {
-                            // I MUST release the lock.
-                            writersWaiting--;
-                            mutex.unlock();
-                            throw new TransactionAbortedException();
-                        }
+        writersWaiting++;
+        // Continue only if there are no writers and no readers, or the only reader/writer is the thread requesting the
+        // write lock.
+        while (!writers.contains(tid)
+                && (writers.size() != 0 || readers.size() != 0 && (readers.size() != 1 || !readers.contains(tid)))) {
+            try {
+                if (timeoutMin <= 0) {
+                    noReaders.await();
+                } else {
+                    int timeout = (timeoutRange != 0 ? rand.nextInt(timeoutRange) : 0) + timeoutMin;
+                    boolean ret = noReaders.await(timeout, TimeUnit.MILLISECONDS);
+                    if (!ret) {
+                        // I MUST release the lock.
+                        writersWaiting--;
+                        mutex.unlock();
+                        throw new TransactionAbortedException();
                     }
-                } catch (InterruptedException ex) {
-                    writersWaiting--;
-                    mutex.unlock();
-                    throw new RuntimeException();
                 }
+            } catch (InterruptedException ex) {
+                writersWaiting--;
+                mutex.unlock();
+                throw new RuntimeException();
             }
-            writers.add(tid);
-            writersWaiting--;
         }
+        writers.add(tid);
+        writersWaiting--;
 
         mutex.unlock();
     }
@@ -186,8 +181,7 @@ public class UpgradeableReentrantReadWriteLock {
 
         writers.remove(tid);
 
-        // Wake all writers if there are any. Must also wake readers in case
-        // there are writers.
+        // Wake all writers if there are any. Must also wake readers in case there are writers.
         noReaders.signalAll();
         noWriters.signalAll();
 
