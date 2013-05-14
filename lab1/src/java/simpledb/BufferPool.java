@@ -268,9 +268,7 @@ public class BufferPool {
      *            - The pid to discard.
      */
     public synchronized void discardPage(PageId pid) {
-        synchronized (lru) {
-            lru.remove(pid);
-        }
+        lru.remove(pid);
 
         pages.remove(pid);
     }
