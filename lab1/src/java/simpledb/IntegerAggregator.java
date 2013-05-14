@@ -104,7 +104,6 @@ public class IntegerAggregator extends AbstractAggregator {
         if (getOp() == Op.COUNT) {
             return super.iterator();
         } else if (agg.size() == 0 && !isGrouped()) {
-            // TODO write test for this.
             // Empty and not grouped should return null.
             Tuple tup = new Tuple(getTd());
             tup.setField(0, null);
