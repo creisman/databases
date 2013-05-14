@@ -150,7 +150,15 @@ public class BufferPool {
         locks.releaseLock(tid, pid);
     }
 
-    /** Return true if the specified transaction has a lock on the specified page */
+    /**
+     * Return true if the specified transaction has a lock on the specified page
+     * 
+     * @param tid
+     *            - The tid to check locks for.
+     * @param pid
+     *            - the pid to check locks for.
+     * @return true if it holds a lock
+     */
     public boolean holdsLock(TransactionId tid, PageId pid) {
         return locks.holdsLock(tid, pid);
     }
@@ -160,6 +168,9 @@ public class BufferPool {
      * 
      * @param tid
      *            the ID of the transaction requesting the unlock
+     * 
+     * @throws IOException
+     *             Thrown if an IO error occurs.
      */
     public void transactionComplete(TransactionId tid) throws IOException {
         transactionComplete(tid, true);
@@ -172,6 +183,9 @@ public class BufferPool {
      *            the ID of the transaction requesting the unlock
      * @param commit
      *            a flag indicating whether we should commit or abort
+     * 
+     * @throws IOException
+     *             Thrown if an IO error occurs.
      */
     public void transactionComplete(TransactionId tid, boolean commit) throws IOException {
         cleanPages(tid, commit);
@@ -194,8 +208,11 @@ public class BufferPool {
      *            the tuple to add
      * 
      * @throws DbException
+     *             Thrown if there is a problem with the database.
      * @throws IOException
+     *             Thrown if there is an IO exception.
      * @throws TransactionAbortedException
+     *             Thrown if the transaction must be aborted.
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t) throws DbException, IOException,
             TransactionAbortedException {
@@ -218,6 +235,11 @@ public class BufferPool {
      *            the transaction deleting the tuple.
      * @param t
      *            the tuple to delete
+     * 
+     * @throws DbException
+     *             Thrown if there is a problem with the database.
+     * @throws TransactionAbortedException
+     *             Thrown if the transaction must be aborted.
      */
     public void deleteTuple(TransactionId tid, Tuple t) throws DbException, TransactionAbortedException {
         Page page = Database.getCatalog().getDbFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
@@ -228,6 +250,9 @@ public class BufferPool {
     /**
      * Flush all dirty pages to disk. NB: Be careful using this routine -- it writes dirty data to disk so will break
      * simpledb if running in NO STEAL mode.
+     * 
+     * @throws IOException
+     *             Thrown if there is a problem with IO.
      */
     public synchronized void flushAllPages() throws IOException {
         for (PageId pid : pages.keySet()) {
@@ -238,6 +263,9 @@ public class BufferPool {
     /**
      * Remove the specific page id from the buffer pool. Needed by the recovery manager to ensure that the buffer pool
      * doesn't keep a rolled back page in its cache.
+     * 
+     * @param pid
+     *            - The pid to discard.
      */
     public synchronized void discardPage(PageId pid) {
         synchronized (lru) {
@@ -268,6 +296,12 @@ public class BufferPool {
 
     /**
      * Write all pages of the specified transaction to disk.
+     * 
+     * @param tid
+     *            - the tid to flush pages for.
+     * 
+     * @throws IOException
+     *             Thrown if an IO error occurs.
      */
     public synchronized void flushPages(TransactionId tid) throws IOException {
         cleanPages(tid, true);
@@ -275,6 +309,9 @@ public class BufferPool {
 
     /**
      * Discards a page from the buffer pool. Flushes the page to disk to ensure dirty pages are updated on disk.
+     * 
+     * @throws DbException
+     *             Thrown if an error occurs in the database.
      */
     private synchronized void evictPage() throws DbException {
         synchronized (lru) {
@@ -295,15 +332,11 @@ public class BufferPool {
         throw new DbException("No clean pages to evict.");
     }
 
-    private synchronized void cleanPages(TransactionId tid, boolean flush) {
+    private synchronized void cleanPages(TransactionId tid, boolean flush) throws IOException {
         for (Entry<PageId, Page> entry : pages.entrySet()) {
             if (tid != null && entry.getValue().isDirty() != null && tid.equals(entry.getValue().isDirty())) {
                 if (flush) {
-                    try {
-                        flushPage(entry.getKey());
-                    } catch (IOException ex) {
-                        throw new RuntimeException("Error flushing page to disk.");
-                    }
+                    flushPage(entry.getKey());
                 } else {
                     discardPage(entry.getKey());
                 }

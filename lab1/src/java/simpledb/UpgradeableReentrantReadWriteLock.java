@@ -66,6 +66,7 @@ public class UpgradeableReentrantReadWriteLock {
      * @param tid
      *            the tid to get the read lock for.
      * @throws TransactionAbortedException
+     *             - Thrown if the lock acquisition times out.
      */
     public void getReadLock(TransactionId tid) throws TransactionAbortedException {
         mutex.lock();
@@ -131,6 +132,7 @@ public class UpgradeableReentrantReadWriteLock {
      * @param tid
      *            the tid to get the write lock for.
      * @throws TransactionAbortedException
+     *             - Thrown if the lock acquisition times out.
      */
     public void getWriteLock(TransactionId tid) throws TransactionAbortedException {
         mutex.lock();
