@@ -16,6 +16,7 @@ public class Aggregate extends Operator {
     private final Aggregator.Op op;
     private Aggregator agg;
     private DbIterator itr;
+    private boolean itrOpen;
 
     /**
      * Constructor.
@@ -96,17 +97,6 @@ public class Aggregate extends Operator {
      */
     @Override
     public void open() throws NoSuchElementException, DbException, TransactionAbortedException {
-        if (itr == null) {
-            child.open();
-            while (child.hasNext()) {
-                agg.mergeTupleIntoGroup(child.next());
-            }
-            child.close();
-
-            itr = agg.iterator();
-        }
-
-        itr.open();
         super.open();
     }
 
@@ -118,6 +108,22 @@ public class Aggregate extends Operator {
      */
     @Override
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
+        if (itr == null) {
+            child.open();
+            while (child.hasNext()) {
+                agg.mergeTupleIntoGroup(child.next());
+            }
+            child.close();
+
+            itr = agg.iterator();
+            itrOpen = false;
+        }
+
+        if (!itrOpen) {
+            itr.open();
+            itrOpen = true;
+        }
+
         if (!itr.hasNext()) {
             return null;
         }
@@ -157,6 +163,7 @@ public class Aggregate extends Operator {
 
         if (itr != null) {
             itr.close();
+            itrOpen = false;
         }
     }
 
