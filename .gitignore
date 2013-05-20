@@ -1,5 +1,7 @@
 *.class
 *.tmp
+log*
+*.db
 
 # Package Files #
 #*.jar # I need these...
