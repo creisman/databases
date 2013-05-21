@@ -293,6 +293,7 @@ public class BufferPool {
             Database.getLogFile().force();
             DbFile file = Database.getCatalog().getDbFile(pid.getTableId());
             file.writePage(page);
+            page.setBeforeImage();
             page.markDirty(false, null);
         }
     }
@@ -340,7 +341,6 @@ public class BufferPool {
             if (tid != null && entry.getValue().isDirty() != null && tid.equals(entry.getValue().isDirty())) {
                 if (flush) {
                     flushPage(entry.getKey());
-                    entry.getValue().setBeforeImage();
                 } else {
                     discardPage(entry.getKey());
                 }
