@@ -324,6 +324,9 @@ public class BufferPool {
             while (itr.hasNext()) {
                 PageId pid = itr.next();
 
+                // TODO this may cause problems if it flushes a page that is later written on because it won't be
+                // caught and flushed when committing. I should either not evict those with write locks or ensure pages
+                // are readded after being dirtied in insert and delete.
                 if (pages.get(pid).isDirty() == null) {
                     itr.remove();
                     pages.remove(pid);
