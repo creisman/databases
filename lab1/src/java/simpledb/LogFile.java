@@ -483,12 +483,20 @@ public class LogFile {
     }
 
     private void undoTransaction(long tid) throws IOException {
+        undoTransaction(tid, raf.length());
+    }
+
+    private void undoTransaction(long tid, long lastOffset) throws IOException {
         Set<Long> transaction = new HashSet<Long>();
         transaction.add(tid);
-        undoTransactions(transaction);
+        undoTransactions(transaction, lastOffset);
     }
 
     private void undoTransactions(Set<Long> transactions) throws IOException {
+        undoTransactions(transactions, raf.length());
+    }
+
+    private void undoTransactions(Set<Long> transactions, long lastOffset) throws IOException {
         if (transactions.size() == 0) {
             return;
         }
@@ -507,7 +515,7 @@ public class LogFile {
                     minRecord = Math.min(record, minRecord);
                 }
 
-                long offset = raf.length();
+                long offset = lastOffset;
 
                 do {
                     raf.seek(offset - LONG_SIZE);
@@ -552,9 +560,7 @@ public class LogFile {
             synchronized (this) {
                 recoveryUndecided = false;
 
-                Set<Long> losers = new HashSet<Long>();
-
-                printTopDown();
+                Set<Long> running = new HashSet<Long>();
 
                 raf.seek(0);
                 long checkpoint = raf.readLong();
@@ -572,25 +578,29 @@ public class LogFile {
                     for (int i = 0; i < num; i++) {
                         long tid = raf.readLong();
                         long offset = raf.readLong();
-                        losers.add(tid);
+                        running.add(tid);
                         tidToFirstLogRecord.put(tid, offset);
                     }
                     raf.readLong();
                 }
 
+                // Process log until the end of the file. Assume log records are written atomically.
                 while (raf.getFilePointer() != raf.length()) {
                     int type = raf.readInt();
                     long tid = raf.readLong();
 
                     if (type == BEGIN_RECORD) {
-                        losers.add(tid);
+                        running.add(tid);
                         tidToFirstLogRecord.put(tid, raf.getFilePointer() - LONG_SIZE);
                     } else if (type == ABORT_RECORD) {
-                        undoTransaction(tid);
-                        losers.remove(tid);
+                        // Abort immediately. Another transaction may later write this, which we'll redo, and then we'll
+                        // do the undo pass and write over it with the old one. I call it with the current file pointer
+                        // (plus the offset length) because no updates will come after the abort record.
+                        undoTransaction(tid, raf.getFilePointer() + LONG_SIZE);
+                        running.remove(tid);
                         tidToFirstLogRecord.remove(tid);
                     } else if (type == COMMIT_RECORD) {
-                        losers.remove(tid);
+                        running.remove(tid);
                         tidToFirstLogRecord.remove(tid);
                     } else if (type == UPDATE_RECORD) {
                         readPageData(raf);
@@ -604,13 +614,13 @@ public class LogFile {
                     raf.readLong();
                 }
 
-                undoTransactions(losers);
+                undoTransactions(running);
             }
         }
     }
 
-    /** Print out a human readable represenation of the log */
-    public void print() throws IOException {
+    /** Print out a human readable represenation of the log from bottom to top */
+    public void printBottomUp() throws IOException {
         long origOffset = raf.getFilePointer();
         System.out.println("Printing log bottom to top");
 
@@ -648,7 +658,8 @@ public class LogFile {
         raf.seek(origOffset);
     }
 
-    public void printTopDown() throws IOException {
+    /** Print out a human readable represenation of the log from top to bottom */
+    public void print() throws IOException {
         long origOffset = raf.getFilePointer();
         System.out.println("Printing log top to bottom");
 
