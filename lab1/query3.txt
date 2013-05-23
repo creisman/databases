@@ -1,9 +1,0 @@
-SELECT a2.name, count(p.id)
-FROM papers p, authors a1, authors a2, paperauths pa1, paperauths pa2
-WHERE a1.name = 'Michael Stonebraker'
-AND pa1.authorid = a1.id 
-AND pa1.paperid = p.id 
-AND pa2.authorid = a2.id 
-AND pa1.paperid = pa2.paperid
-GROUP BY a2.name
-ORDER BY a2.name;
