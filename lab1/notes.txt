@@ -1,6 +1,0 @@
-BufferPool
-We check if a transaction holds a lock for a page... But not WHICH lock it holds!
-evictPage should not evict pages with write locks, not just dirty pages. There could be a threading problem otherwise.
-
-Page.java
-Any method that starts with is* should return a boolean in proper Java convention.
