@@ -50,6 +50,10 @@ public class LockManager {
      * @return true if tid holds a read or write lock on pid.
      */
     public boolean holdsLock(TransactionId tid, PageId pid) {
+        if (tid == null) {
+            return true;
+        }
+
         return locks.get(pid).holdsLock(tid);
     }
 
@@ -79,6 +83,10 @@ public class LockManager {
      *             Thrown to prevent deadlocks.
      */
     public void getLock(TransactionId tid, PageId pid, Permissions perm) throws TransactionAbortedException {
+        if (tid == null) {
+            return;
+        }
+
         locksMutator.lock();
         if (!locks.containsKey(pid)) {
             locks.put(pid, new UpgradeableReentrantReadWriteLock(TIMEOUT_MIN, TIMEOUT_MAX));
@@ -103,6 +111,10 @@ public class LockManager {
      *            - the pid to release locks for.
      */
     public void releaseLock(TransactionId tid, PageId pid) {
+        if (tid == null) {
+            return;
+        }
+
         UpgradeableReentrantReadWriteLock lock = locks.get(pid);
 
         lock.releaseLocks(tid);
@@ -115,6 +127,10 @@ public class LockManager {
      *            - the tid to release locks for.
      */
     public void releaseLocks(TransactionId tid) {
+        if (tid == null) {
+            return;
+        }
+
         for (UpgradeableReentrantReadWriteLock lock : locks.values()) {
             lock.releaseLocks(tid);
         }
