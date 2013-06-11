@@ -277,10 +277,10 @@ public class Catalog {
         public final String pkey;
         public final String name;
 
-        public Table(DbFile file, String pkey, String name) {
+        public Table(DbFile file, String name, String pkey) {
             this.file = file;
-            this.pkey = pkey;
             this.name = name;
+            this.pkey = pkey;
         }
     }
 }
