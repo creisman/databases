@@ -32,11 +32,11 @@ public class IntHistogram {
      */
     public IntHistogram(int buckets, int min, int max) {
         this.min = min;
-        delta = max - min + 1;
+        delta = max - min;
         numTuples = 0;
 
         // Since I take ints, each bucket must be at least one wide.
-        counts = new int[Math.min(buckets, delta)];
+        counts = new int[delta];// Math.min(buckets, delta)];
     }
 
     /**
@@ -77,12 +77,12 @@ public class IntHistogram {
         switch (op) {
         case LIKE:
         case EQUALS:
-            return getSelectivity(bucket);
+            return getProportion(bucket) / getBucketDelta();
         case GREATER_THAN:
             selectivity = getGreaterThan(bucket);
 
             fractionWidth = 1 - (v - min) % getBucketDelta() / getBucketDelta();
-            selectivity += fractionWidth * getSelectivity(bucket);
+            selectivity += fractionWidth * getProportion(bucket);
 
             return selectivity;
         case GREATER_THAN_OR_EQ:
@@ -94,7 +94,7 @@ public class IntHistogram {
             selectivity = getLessThan(bucket);
 
             fractionWidth = (v - min) % getBucketDelta() / getBucketDelta();
-            selectivity += fractionWidth * getSelectivity(bucket);
+            selectivity += fractionWidth * getProportion(bucket);
             return selectivity;
         case LESS_THAN_OR_EQ:
             selectivity = getLessThan(bucket);
@@ -117,7 +117,7 @@ public class IntHistogram {
     public double avgSelectivity() {
         double sum = 0;
         for (int i = 0; i < counts.length; i++) {
-            sum += getSelectivity(i);
+            sum += getProportion(i);
         }
 
         return sum / counts.length;
@@ -144,24 +144,24 @@ public class IntHistogram {
         return (double) delta / counts.length;
     }
 
-    private double getSelectivity(int bucket) {
+    private double getProportion(int bucket) {
         if (bucket > counts.length - 1 || bucket < 0) {
             return 0;
         }
 
-        return counts[bucket] / getBucketDelta() / numTuples;
+        return (double) counts[bucket] / numTuples;
     }
 
     private double getGreaterThan(int bucket) {
         if (bucket >= counts.length) {
             return 0;
-        } else if (bucket < min) {
+        } else if (bucket < 0) {
             return 1;
         }
 
         double selectivity = 0;
         for (int i = bucket + 1; i < counts.length; i++) {
-            selectivity += getSelectivity(i);
+            selectivity += getProportion(i);
         }
 
         return selectivity;
@@ -170,13 +170,13 @@ public class IntHistogram {
     private double getLessThan(int bucket) {
         if (bucket > counts.length) {
             return 1;
-        } else if (bucket <= min) {
+        } else if (bucket <= 0) {
             return 0;
         }
 
         double selectivity = 0;
         for (int i = bucket - 1; i >= 0; i--) {
-            selectivity += getSelectivity(i);
+            selectivity += getProportion(i);
         }
 
         return selectivity;
