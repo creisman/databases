@@ -140,10 +140,10 @@ public class EfficientJoinOptimizer {
             // A LogicalSubplanJoinNode represents a subquery.
             // You do not need to implement proper support for these for Lab 4.
             return card1;
-        } else {
-            return estimateTableJoinCardinality(j.p, j.t1Alias, j.t2Alias, j.f1PureName, j.f2PureName, card1, card2,
-                    t1pkey, t2pkey, stats, p.getTableAliasToIdMapping());
         }
+
+        return estimateTableJoinCardinality(j.p, j.t1Alias, j.t2Alias, j.f1PureName, j.f2PureName, card1, card2,
+                t1pkey, t2pkey, stats, p.getTableAliasToIdMapping());
     }
 
     /**
@@ -234,6 +234,10 @@ public class EfficientJoinOptimizer {
         Arrays.fill(all, true);
 
         joins = cache.getOrder(new Enumeration(all));
+
+        if (joins == null) {
+            joins = new Vector<LogicalJoinNode>();
+        }
 
         if (explain) {
             // Build a single set instead of reimplementing this...

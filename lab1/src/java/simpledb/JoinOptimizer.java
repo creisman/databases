@@ -1,5 +1,6 @@
 package simpledb;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -16,6 +17,7 @@ import javax.swing.WindowConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 
+import simpledb.CombinationEnumerator.Enumeration;
 import simpledb.Predicate.Op;
 
 /**
@@ -238,8 +240,6 @@ public class JoinOptimizer {
         // return optjoin(j)
         //@formatter:on
 
-        // TODO explain
-
         PlanCache cache = new PlanCache();
 
         for (int i = 1; i <= joins.size(); i++) {
@@ -266,8 +266,80 @@ public class JoinOptimizer {
 
         joins = cache.getOrder(nodes);
 
+        if (joins == null) {
+            joins = new Vector<LogicalJoinNode>();
+        }
+
         if (explain) {
             printJoins(joins, cache, stats, filterSelectivities);
+        }
+
+        return joins;
+    }
+
+    /**
+     * Compute a logical, reasonably efficient join on the specified tables. See PS4 for hints on how this should be
+     * implemented.
+     * 
+     * @param stats
+     *            Statistics for each table involved in the join, referenced by base table names, not alias
+     * @param filterSelectivities
+     *            Selectivities of the filter predicates on each table in the join, referenced by table alias (if no
+     *            alias, the base table name)
+     * @param explain
+     *            Indicates whether your code should explain its query plan or simply execute it
+     * @return A Vector<LogicalJoinNode> that stores joins in the left-deep order in which they should be executed.
+     * @throws ParsingException
+     *             when stats or filter selectivities is missing a table in the join, or or when another internal error
+     *             occurs
+     */
+    public Vector<LogicalJoinNode> efficientOrderJoins(HashMap<String, TableStats> stats,
+            HashMap<String, Double> filterSelectivities, boolean explain) throws ParsingException {
+        //@formatter:off
+        // j = set of join nodes
+        // for (i in 1...|j|): // First find best plan for single join, then for two joins, etc.
+        //   for s in {all length i subsets of j} // Looking at a concrete subset of joins
+        //     bestPlan = {} // We want to find the best plan for this concrete subset
+        //     for s' in {all length i-1 subsets of s}
+        //       subplan = optjoin(s') // Look-up in the cache the best query plan for s but with one relation missing
+        //       plan = best way to join (s-s') to subplan // Now find the best plan to extend s' by one join to get s
+        //       if (cost(plan) < cost(bestPlan))
+        //       bestPlan = plan // Update the best plan for computing s
+        //     optjoin(s) = bestPlan
+        // return optjoin(j)
+        //@formatter:on
+
+        EfficientPlanCache cache = new EfficientPlanCache();
+
+        for (int i = 1; i <= joins.size(); i++) {
+            CombinationEnumerator enums = new CombinationEnumerator(joins.size(), i);
+            while (enums.hasNext()) {
+                Enumeration comb = enums.next();
+                double bestCost = Double.MAX_VALUE;
+
+                for (int j = 0; j < joins.size(); j++) {
+                    // Only run this if the current index is one that's selected.
+                    if (comb.isIncluded(j)) {
+                        CostCard card = efficientComputeCostAndCardOfSubplan(stats, filterSelectivities, j, comb,
+                                joins, bestCost, cache);
+
+                        if (card != null && card.cost < bestCost) {
+                            bestCost = card.cost;
+                            cache.addPlan(comb, card.cost, card.card, card.plan);
+                        }
+                    }
+                }
+            }
+        }
+
+        boolean[] all = new boolean[joins.size()];
+        Arrays.fill(all, true);
+
+        joins = cache.getOrder(new Enumeration(all));
+
+        if (explain) {
+            // Build a single set instead of reimplementing this...
+            efficientPrintJoins(joins, cache, stats, filterSelectivities);
         }
 
         return joins;
@@ -349,6 +421,139 @@ public class JoinOptimizer {
 
             double prevBestCost = pc.getCost(news);
             int bestCard = pc.getCard(news);
+
+            // estimate cost of right subtree
+            if (doesJoin(prevBest, table1Alias)) { // j.t1 is in prevBest
+                t1cost = prevBestCost; // left side just has cost of whatever
+                                       // left
+                // subtree is
+                t1card = bestCard;
+                leftPkey = hasPkey(prevBest);
+
+                t2cost = j.t2Alias == null ? 0 : stats.get(table2Name).estimateScanCost();
+                t2card = j.t2Alias == null ? 0 : stats.get(table2Name).estimateTableCardinality(
+                        filterSelectivities.get(j.t2Alias));
+                rightPkey = j.t2Alias == null ? false : isPkey(j.t2Alias, j.f2PureName);
+            } else if (doesJoin(prevBest, j.t2Alias)) { // j.t2 is in prevbest
+                                                        // (both
+                // shouldn't be)
+                t2cost = prevBestCost; // left side just has cost of whatever
+                                       // left
+                // subtree is
+                t2card = bestCard;
+                rightPkey = hasPkey(prevBest);
+
+                t1cost = stats.get(table1Name).estimateScanCost();
+                t1card = stats.get(table1Name).estimateTableCardinality(filterSelectivities.get(j.t1Alias));
+                leftPkey = isPkey(j.t1Alias, j.f1PureName);
+
+            } else {
+                // don't consider this plan if one of j.t1 or j.t2
+                // isn't a table joined in prevBest (cross product)
+                return null;
+            }
+        }
+
+        // case where prevbest is left
+        double cost1 = estimateJoinCost(j, t1card, t2card, t1cost, t2cost);
+
+        LogicalJoinNode j2 = j.swapInnerOuter();
+        double cost2 = estimateJoinCost(j2, t2card, t1card, t2cost, t1cost);
+        if (cost2 < cost1) {
+            boolean tmp;
+            j = j2;
+            cost1 = cost2;
+            tmp = rightPkey;
+            rightPkey = leftPkey;
+            leftPkey = tmp;
+        }
+        if (cost1 >= bestCostSoFar) {
+            return null;
+        }
+
+        CostCard cc = new CostCard();
+
+        cc.card = estimateJoinCardinality(j, t1card, t2card, leftPkey, rightPkey, stats);
+        cc.cost = cost1;
+        cc.plan = (Vector<LogicalJoinNode>) prevBest.clone();
+        cc.plan.addElement(j); // prevbest is left -- add new join to end
+        return cc;
+    }
+
+    /**
+     * This is a helper method that computes the cost and cardinality of joining joinToRemove to joinSet (joinSet should
+     * contain joinToRemove), given that all of the subsets of size joinSet.size() - 1 have already been computed and
+     * stored in PlanCache pc.
+     * 
+     * @param stats
+     *            table stats for all of the tables, referenced by table names rather than alias (see
+     *            {@link #orderJoins})
+     * @param filterSelectivities
+     *            the selectivities of the filters over each of the tables (where tables are indentified by their alias
+     *            or name if no alias is given)
+     * @param joinToRemove
+     *            the join to remove from joinSet
+     * @param joinSet
+     *            the set of joins being considered
+     * @param bestCostSoFar
+     *            the best way to join joinSet so far (minimum of previous invocations of computeCostAndCardOfSubplan
+     *            for this joinSet, from returned CostCard)
+     * @param pc
+     *            the PlanCache for this join; should have subplans for all plans of size joinSet.size()-1
+     * @return A {@link CostCard} objects desribing the cost, cardinality, optimal subplan
+     * @throws ParsingException
+     *             when stats, filterSelectivities, or pc object is missing tables involved in join
+     */
+    @SuppressWarnings("unchecked")
+    private CostCard efficientComputeCostAndCardOfSubplan(HashMap<String, TableStats> stats,
+            HashMap<String, Double> filterSelectivities, int joinToRemoveIndex, Enumeration includedJoins,
+            Vector<LogicalJoinNode> joinVec, double bestCostSoFar, EfficientPlanCache pc) throws ParsingException {
+
+        LogicalJoinNode j = joinVec.get(joinToRemoveIndex);
+
+        Vector<LogicalJoinNode> prevBest;
+
+        if (p.getTableId(j.t1Alias) == null) {
+            throw new ParsingException("Unknown table " + j.t1Alias);
+        }
+        if (p.getTableId(j.t2Alias) == null) {
+            throw new ParsingException("Unknown table " + j.t2Alias);
+        }
+
+        String table1Name = Database.getCatalog().getTableName(p.getTableId(j.t1Alias));
+        String table2Name = Database.getCatalog().getTableName(p.getTableId(j.t2Alias));
+        String table1Alias = j.t1Alias;
+        String table2Alias = j.t2Alias;
+
+        Enumeration enu = includedJoins.clone();
+        enu.set(joinToRemoveIndex, false);
+
+        double t1cost, t2cost;
+        int t1card, t2card;
+        boolean leftPkey, rightPkey;
+
+        if (enu.size() == 0) { // base case -- both are base relations
+            prevBest = new Vector<LogicalJoinNode>();
+            t1cost = stats.get(table1Name).estimateScanCost();
+            t1card = stats.get(table1Name).estimateTableCardinality(filterSelectivities.get(j.t1Alias));
+            leftPkey = isPkey(j.t1Alias, j.f1PureName);
+
+            t2cost = table2Alias == null ? 0 : stats.get(table2Name).estimateScanCost();
+            t2card = table2Alias == null ? 0 : stats.get(table2Name).estimateTableCardinality(
+                    filterSelectivities.get(j.t2Alias));
+            rightPkey = table2Alias == null ? false : isPkey(table2Alias, j.f2PureName);
+        } else {
+            // news is not empty -- figure best way to join j to news
+            prevBest = pc.getOrder(enu);
+
+            // possible that we have not cached an answer, if subset
+            // includes a cross product
+            if (prevBest == null) {
+                return null;
+            }
+
+            double prevBestCost = pc.getCost(enu);
+            int bestCard = pc.getCard(enu);
 
             // estimate cost of right subtree
             if (doesJoin(prevBest, table1Alias)) { // j.t1 is in prevBest
@@ -563,4 +768,121 @@ public class JoinOptimizer {
 
     }
 
+    /**
+     * Helper function to display a Swing window with a tree representation of the specified list of joins. See
+     * {@link #orderJoins}, which may want to call this when the analyze flag is true.
+     * 
+     * @param js
+     *            the join plan to visualize
+     * @param pc
+     *            the PlanCache accumulated whild building the optimal plan
+     * @param stats
+     *            table statistics for base tables
+     * @param selectivities
+     *            the selectivities of the filters over each of the tables (where tables are indentified by their alias
+     *            or name if no alias is given)
+     */
+    private void efficientPrintJoins(Vector<LogicalJoinNode> js, EfficientPlanCache pc,
+            HashMap<String, TableStats> stats, HashMap<String, Double> selectivities) {
+
+        JFrame f = new JFrame("Join Plan for " + p.getQuery());
+
+        // Set the default close operation for the window,
+        // or else the program won't exit when clicking close button
+        f.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+        f.setVisible(true);
+
+        f.setSize(300, 500);
+
+        HashMap<String, DefaultMutableTreeNode> m = new HashMap<String, DefaultMutableTreeNode>();
+
+        // int numTabs = 0;
+
+        // int k;
+        DefaultMutableTreeNode root = null, treetop = null;
+        Set<LogicalJoinNode> pathSoFar = new HashSet<LogicalJoinNode>();
+        boolean[] arr = new boolean[js.size()];
+        Enumeration enu = new Enumeration(arr);
+        boolean neither;
+
+        System.out.println(js);
+        for (int i = 0; i < js.size(); i++) {
+            LogicalJoinNode j = js.get(i);
+            pathSoFar.add(j);
+            System.out.println("PATH SO FAR = " + pathSoFar);
+
+            String table1Name = Database.getCatalog().getTableName(p.getTableId(j.t1Alias));
+            String table2Name = Database.getCatalog().getTableName(p.getTableId(j.t2Alias));
+
+            // Double c = pc.getCost(pathSoFar);
+            neither = true;
+
+            root = new DefaultMutableTreeNode("Join " + j + " (Cost =" + pc.getCost(enu) + ", card = "
+                    + pc.getCard(enu) + ")");
+            DefaultMutableTreeNode n = m.get(j.t1Alias);
+            if (n == null) { // never seen this table before
+                n = new DefaultMutableTreeNode(j.t1Alias + " (Cost = " + stats.get(table1Name).estimateScanCost()
+                        + ", card = " + stats.get(table1Name).estimateTableCardinality(selectivities.get(j.t1Alias))
+                        + ")");
+                root.add(n);
+            } else {
+                // make left child root n
+                root.add(n);
+                neither = false;
+            }
+            m.put(j.t1Alias, root);
+
+            n = m.get(j.t2Alias);
+            if (n == null) { // never seen this table before
+
+                n = new DefaultMutableTreeNode(j.t2Alias == null ? "Subplan" : j.t2Alias + " (Cost = "
+                        + stats.get(table2Name).estimateScanCost() + ", card = "
+                        + stats.get(table2Name).estimateTableCardinality(selectivities.get(j.t2Alias)) + ")");
+                root.add(n);
+            } else {
+                // make right child root n
+                root.add(n);
+                neither = false;
+            }
+            m.put(j.t2Alias, root);
+
+            // unless this table doesn't join with other tables,
+            // all tables are accessed from root
+            if (!neither) {
+                for (String key : m.keySet()) {
+                    m.put(key, root);
+                }
+            }
+
+            treetop = root;
+        }
+
+        JTree tree = new JTree(treetop);
+        JScrollPane treeView = new JScrollPane(tree);
+
+        tree.setShowsRootHandles(true);
+
+        // Set the icon for leaf nodes.
+        ImageIcon leafIcon = new ImageIcon("join.jpg");
+        DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
+        renderer.setOpenIcon(leafIcon);
+        renderer.setClosedIcon(leafIcon);
+
+        tree.setCellRenderer(renderer);
+
+        f.setSize(300, 500);
+
+        f.add(treeView);
+        for (int i = 0; i < tree.getRowCount(); i++) {
+            tree.expandRow(i);
+        }
+
+        if (js.size() == 0) {
+            f.add(new JLabel("No joins in plan."));
+        }
+
+        f.pack();
+
+    }
 }
