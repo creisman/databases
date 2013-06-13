@@ -20,7 +20,7 @@ import simpledb.CombinationEnumerator.Enumeration;
  */
 public class EnumerationTest {
     // This should be larger than 8 in order to get good timing for speedTest.
-    public static final int SPEED_TEST_SIZE = 33;
+    public static final int SPEED_TEST_SIZE = 15;
 
     @Test
     public void testAllEnumerations() {
@@ -58,7 +58,7 @@ public class EnumerationTest {
 
         for (int i = 0; i < SPEED_TEST_SIZE; i++) {
             JoinOptimizer opt = new JoinOptimizer(null, null);
-            // opt.enumerateSubsets(vec, i);
+            opt.enumerateSubsets(vec, i);
 
             System.out.println("Done with " + i);
         }

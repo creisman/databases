@@ -1,0 +1,274 @@
+526| Levi|Abrino
+1563| Yuldash|Agzamov
+1814| Eduardo|Airoso
+2000| Nuri|Akinci
+3542| Robert|Altman
+5631| Tudor|Applen
+7722| Ford|Austin
+8549| Malik|Bader
+8552| Sam|Bader
+8690| King|Baggot
+13637| Spencer Gordon|Bennet
+14703| Michel|Berny
+15051| Odette|Best
+15111| David|Bettencourt
+15236| Frank|Beyer
+16017| Cecil|Birch
+16236| Matt|Bissonnette
+10104| Uri|Barbash
+10305| Pavel|Bardin
+10325| Stanislaw|Bareja
+19734| Robert N.|Bradbury
+19839| Shaun|Brady
+20434| Richard L.|Breen
+20498| Bill|Breithaupt
+20644| Howard|Bretherton
+21112| Q. Allan|Brocka
+21499| Guy|Brousmiche
+23291| Frank|Burns
+23742| David|Butler
+25076| James|Cameron
+28686| Brian|Chamberlain
+28935| Tapi|Chanakya
+30322| Tchidi|Chikere
+30465| Mel|Chionglo
+32454| Eugenio|Cobo
+32781| Norman|Cohen
+33380| James|Colmer
+34643| John|Cork
+35351| Pierre|Coulibeuf
+35361| Allen|Coulter
+35545| Paul|Cowan
+35733| Grant|Crabtree
+36170| Karen|Criswell
+37213| Michael|Curtiz
+37893| John|Dagnen
+37896| Sven|Dagones
+37941| Tore|Dahlin
+39642| Norman|Dawn
+39927| Martica|De Cardenas
+40602| Ed|De Priest
+40635| Francesco|De Robertis
+43804| Edward|Dillon
+43807| John Francis|Dillon
+44875| Stanley|Donen
+45537| William C.|Dowlan
+46775| Kevin|Dunn
+49656| Axel|Engstfeld
+47627| Charles|Eames
+47630| Ray|Eames
+47708| Clint|Eastwood
+47780| P. David|Ebersole
+48122| Henry|Edwards
+48360| Atom|Egoyan
+48649| Hasse|Ekman
+51816| John|Farrow
+54061| Holly|Fisher
+55738| Finis|Fox
+56346| John Rory|Fraser
+56507| Paul|Freedman
+56782| Derek|Frey
+57203| Alejandro|Frutos
+57304| Geli|Fuchs
+58479| Jean-Baptiste|Gallot
+59466| Christopher P.|Garetano
+60321| Geoff|Gedroyc
+60439| Alec|Geiss
+61509| Chris|Giddens
+62172| Jay|Gira
+64000| Don|Goodman
+64017| Karen|Goodman
+64895| Dominik|Graf
+69111| Suzie|Halewood
+71129| William S.|Hart
+71285| Nigel|Hartwell
+72139| James|Hayman
+72866| Tea|Helen
+73229| Hobart|Henley
+73329| Bob|Henry
+75169| Leslie S.|Hiscott
+75182| Todd|Hissong
+75693| James P.|Hogan
+79271| Esa|Illi
+79315| Tadashi|Imai
+79627| Suthat|Intaranupakorn
+79717| Aspi|Irani
+79877| Levi|Isaacs
+80357| James|Ivory
+80514| Jacques|Jaccard
+80841| Werner|Jacobs
+84020| Shyam|Joshi
+84778| George|Kaczender
+86234| Roger|Karmanik
+86625| Akira|Kato
+87068| Shinya|Kawatsura
+87797| Tim|Kelly
+88123| David|Kent-Watson
+98455| Jeong-Kuk|Lee
+98999| Riikka|Lehtinen
+99642| Georg|Leopold
+100040| Gary|Leva
+100294| Bob|Levy
+100859| Kittikorn|Liasirikun
+101354| Fu Di|Lin
+101476| Peter|Lindbergh
+101834| Zach|Lipovsky
+89387| Tae-Yong|Kim
+90546| Markus|Kleusch
+90912| Klaus|Knoesel
+91580| Amos|Kollek
+92152| John|Korty
+93435| John|Krueger
+93623| Robert|Kubilos
+94849| Gregory|La Cava
+97523| Jonathan|Lawrence
+97552| Quentin|Lawrence
+102427| Ken|Loach
+103174| Del|Lord
+104025| Dirk|Ludwig
+105860| Guy|Maddin
+106328| Brendan|Maher
+106402| Tony|Mahood
+106690| Mariya|Makhanko
+106814| Chris|Malazdrewicz
+107007| Louis|Malle
+108373| Jeff|Margolis
+108715| Steve|Markle
+109488| Lonnie|Martin
+112449| Robert|McDonagh
+112663| Anita|McGee
+113120| Robert|McKimson
+113324| Shane|McLoughlin
+113474| Charles|McNeil
+115015| Kieth|Merrill
+115559| Alexis|Miansarow
+115928| Monica|Miguel
+116109| Willie|Milan
+116318| Arnold L.|Miller
+117709| Kenji|Mizoguchi
+118641| Carl|Monson
+119813| Anders|Morgenthaler
+123577| Gregory|Nava
+124542| Mike|Newell
+124631| Fred C.|Newmeyer
+126201| Sydney|Northcote
+127129| Peter|O'Fallon
+127290| Gayle|O'Neal
+127796| Michael|Offer
+129045| Matt|Orefice
+130359| Anthony|Page
+130728| Detlef|Palm
+131300| Phedon|Papamichael
+131855| Lem B.|Parker
+131922| Thomas|Parkinson
+133076| Brian|Pearce
+133140| Daley|Pearson
+134259| Lenita|Perroy
+135033| Berengar|Pfahl
+136021| Gertrud|Pinkus
+136336| Brian|Pitts
+137106| Gerhard|Polt
+138002| Paul|Powell
+138587| Will|Price
+138798| Fabian|Probst
+139427| Tom|Putnam
+140222| Arthur Maria|Rabenalt
+140365| Mark|Radice
+141099| Mogalito H.|Ramm
+142649| Scott|Reeder
+142733| Halit|Refig
+142855| Sam|Reich-Dagnen
+143211| Veit|Relin
+143390| Jean|Renoir
+143526| Angelo Salvatore|Restaino
+143735| Jose Javier|Reyes
+144568| Richard|Ridgely
+144773| Andreas J.|Riiser
+144941| Lisa|Rinzler
+145017| Arturo|Ripstein
+145040| Dino|Risi
+145774| Michael M.|Robin
+147714| Peter|Rosen
+147804| Gil|Rosenblum
+149933| Helle|Ryslinge
+150154| Jorge|Saavedra
+150322| Daniel|Sackheim
+150793| Nobuto|Sakai
+151749| Helke|Sander
+151786| Mark|Sanders
+151942| Arlene|Sanford
+153632| Dore|Schary
+153844| Victor|Schertzinger
+153939| Stephan|Schiffers
+154090| Werner|Schlechte
+154232| Marcel|Schmid
+155563| Bruce|Scivally
+156251| Markus|Sehr
+156324| Takumei|Seiryo
+157046| Jacques|Servaes
+157899| Don|Sharp
+158160| Michael|Sheehan
+159079| Peter|Shore
+160153| Kirk|Simon
+160299| Jamie|Simpson
+160691| Robert|Siodmak
+161711| Clive A.|Smith
+162751| Mohamed|Soliman
+163165| Dror|Soref
+163488| Kenneth J.|Souza
+163784| J. Robert|Spencer
+165001| Eric|Steegstra
+168031| Hal|Sutherland
+168266| Carl|Svensson
+168389| Leonard A.|Swann Jr.
+169713| Seiryo|Takuaki
+170159| Aaron|Tankenson
+170606| Paolo|Taviani
+170607| Vittorio|Taviani
+171351| Brandon|Terrell
+172059| Joe|Thomas
+172790| Luke|Tierney
+178104| Eli|Van Noppen
+179132| Marco|Velez
+179457| Pat|Verducci
+179590| Robert|Vernay
+181908| Oliver|Waghorn
+182042| Ka-Fai|Wai
+182204| Ekta|Walia
+182630| Raoul|Walsh
+183618| Nate|Watt
+185027| Anne|Westcott
+185029| Jim|Westcott
+185051| Richard|Westermaier
+185164| R.J.|Weyant
+185216| Leopold|Wharton
+185219| Theodore|Wharton
+185251| Charlotte|Wheeler
+185853| Ute|Wieland
+186385| Derek|Williams
+186496| Jon|Williams
+186707| Kimberly|Williams-Paisley
+173160| Johnnie|To
+173196| Anthony|Tobin
+173796| Pablo|Torello
+174000| Sasha-Alexandre|Torres
+174804| Laurence|Trimble
+175938| Kamil|Turowski
+176056| Milos|Twilight
+176667| Fred|Unger
+186916| David A.|Wilson
+186973| John C.|Wilson
+187023| Mike|Wilson
+187485| Robert|Wise
+187928| Andy|Wolk
+188370| Jon|Woods
+188466| Daniel J.|Woolsey
+188650| Andree|Wright
+189934| Tung-Shing|Yee
+190528| Mark|Young
+190568| Roger|Young
+190580| Stewart|Young
+190868| Josema|Yuste
+190942| Maurizio|Zaccaro
+191160| Alain|Zaloum
+191523| Edwin|Zbonek
