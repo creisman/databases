@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * A set of classes for enumeration potential plans.
+ * A set of classes for enumerating all combinations.
  * 
  * @author Conor
  * 
@@ -105,15 +105,7 @@ public class CombinationEnumerator implements Iterator<CombinationEnumerator.Enu
 
         @Override
         public int hashCode() {
-            int count = 1;
-
-            for (boolean element : arr) {
-                count *= 31;
-                if (element) {
-                    count += 37;
-                }
-            }
-            return count;
+            return Arrays.hashCode(arr);
         }
 
         public boolean isIncluded(int index) {
