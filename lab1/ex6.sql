@@ -1,4 +1,0 @@
-select d.fname, d.lname
-from Actor a, Casts c, Movie_Director m, Director d
-where a.id=c.pid and c.mid=m.mid and m.did=d.id 
-and a.fname='John' and a.lname='Spicer';
