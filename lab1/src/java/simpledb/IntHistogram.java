@@ -78,6 +78,7 @@ public class IntHistogram {
         case LIKE:
         case EQUALS:
             return getProportion(bucket) / getBucketDelta();
+        case GREATER_THAN_OR_EQ:
         case GREATER_THAN:
             selectivity = getGreaterThan(bucket);
 
@@ -85,21 +86,12 @@ public class IntHistogram {
             selectivity += fractionWidth * getProportion(bucket);
 
             return selectivity;
-        case GREATER_THAN_OR_EQ:
-            selectivity = getGreaterThan(bucket);
-            selectivity += estimateSelectivity(Predicate.Op.EQUALS, v);
-
-            return selectivity;
+        case LESS_THAN_OR_EQ:
         case LESS_THAN:
             selectivity = getLessThan(bucket);
 
             fractionWidth = (v - min) % getBucketDelta() / getBucketDelta();
             selectivity += fractionWidth * getProportion(bucket);
-            return selectivity;
-        case LESS_THAN_OR_EQ:
-            selectivity = getLessThan(bucket);
-            selectivity += estimateSelectivity(Predicate.Op.EQUALS, v);
-
             return selectivity;
         case NOT_EQUALS:
             return 1 - estimateSelectivity(Predicate.Op.EQUALS, v);
